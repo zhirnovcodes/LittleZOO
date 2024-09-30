@@ -8,14 +8,17 @@ public class CameraController : MonoBehaviour
     [SerializeField] private float MinOffset = 1f;
     [SerializeField] private float MaxOffset = 100f;
     [SerializeField] private float ZoomSpeed = 10f;
+    [SerializeField] private float ZoomPower = 10f;
     [SerializeField] private float ScrollPower = 10f;
+    [SerializeField] private float ScrollSmoothness = 10f;
 
     private Vector3 ScreenGrabPoint;
+    private Vector3 LastRotation;
     private Quaternion HandleGrabRotation;
 
     private float MinDistance;
     private float MaxDistance;
-    private float NextDistance;
+    private float NextZ;
 
     private void Start()
     {
@@ -25,6 +28,7 @@ public class CameraController : MonoBehaviour
 
         MinDistance = planetRadius + MinOffset + cameraNearPlane;
         MaxDistance = planetRadius + MaxOffset + cameraNearPlane;
+        NextZ = Camera.transform.localPosition.z;
     }
 
     // Update is called once per frame
@@ -38,20 +42,21 @@ public class CameraController : MonoBehaviour
 
         if (scrollDelta != 0)
         {
-            var speed = ZoomSpeed * Time.deltaTime * scrollDelta;
+            var speed = ZoomPower * scrollDelta;
 
-            NextDistance = Mathf.Clamp( distance + speed, MinDistance, MaxDistance);
-            Camera.transform.localPosition = new Vector3(0, 0, -Mathf.Lerp(distance, NextDistance, ZoomSpeed * Time.deltaTime));
+            NextZ = -Mathf.Clamp( distance + speed, MinDistance, MaxDistance);
         }
 
-        if (Mathf.Abs(distance - NextDistance) <= 0.01f)
+        if (Mathf.Abs(distance + NextZ) > 0.01f)
         {
+            Camera.transform.localPosition = new Vector3(0, 0, Mathf.Lerp(-distance, NextZ, Mathf.Clamp01( ZoomSpeed * Time.deltaTime )));
         }
 
         if (Input.GetKeyDown(KeyCode.Mouse0))
         {
             ScreenGrabPoint = Input.mousePosition;
             HandleGrabRotation = CameraHandle.transform.rotation;
+            LastRotation = Vector3.zero;
         }
 
         if (Input.GetKey(KeyCode.Mouse0))
@@ -60,21 +65,8 @@ public class CameraController : MonoBehaviour
             var drag = screenPosition - ScreenGrabPoint;
             var axis = new Vector3(-drag.y, drag.x, 0);
             var euler = axis * ScrollPower;
-            CameraHandle.transform.rotation = HandleGrabRotation * Quaternion.Euler(euler);
-            /*
-            var angle = ScrollSpeed * Time.deltaTime * Mathf.Clamp01(drag.magnitude);
-
-            var rotation = Quaternion.AngleAxis(angle, axis);
-
-            var planetPosition = Planet.position;
-
-            var direction = cameraPosition - planetPosition;
-            var directionNew = rotation * direction;
-            var positionNew = planetPosition + directionNew;
-
-            Camera.transform.position = positionNew;
-            Camera.transform.LookAt(Planet, Vector3.up);
-            */
+            LastRotation = Vector3.Lerp(LastRotation, euler, Mathf.Clamp01( ScrollSmoothness * Time.deltaTime));
+            CameraHandle.transform.rotation = HandleGrabRotation * Quaternion.Euler(LastRotation);
         }
     }
 }

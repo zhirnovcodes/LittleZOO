@@ -441,10 +441,12 @@ MonoBehaviour:
   Planet: {fileID: 400927344}
   CameraHandle: {fileID: 730744319}
   Camera: {fileID: 330585545}
-  MinOffset: 1
+  MinOffset: 3
   MaxOffset: 100
-  ZoomSpeed: 200
-  ScrollPower: 1
+  ZoomSpeed: 50
+  ZoomPower: 5
+  ScrollPower: 0.4
+  ScrollSmoothness: 5
 --- !u!4 &730744319
 Transform:
   m_ObjectHideFlags: 0
