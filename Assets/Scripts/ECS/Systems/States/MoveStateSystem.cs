@@ -1,12 +1,8 @@
-using System.Collections;
-using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics;
-using Unity.Physics.Systems;
 using Unity.Transforms;
-using UnityEngine;
 using Zoo.Physics;
 
 [BurstCompile]
@@ -40,12 +36,13 @@ public partial class MoveStateSystem : SystemBase
                 in GravityComponent gravity
             ) =>
         {
+            /*
             if (IsEmptyData(movingData.TargetPosition))
             {
                 movingData.TargetPosition = GenerateTargetDistance(ref random, transform.Position, planetCenter, planetScale);
             }
 
-            if (HasArrivedToDestination(transform.Position, movingData.TargetPosition, gravity.GravityDirection))
+            if (HasArrivedToDestination(transform.Position, movingData.TargetPosition, gravity.GravityDirection, transform.Scale))
             {
                 movingData.TargetPosition = GenerateTargetDistance(ref random, transform.Position, planetCenter, planetScale);
             }
@@ -56,19 +53,21 @@ public partial class MoveStateSystem : SystemBase
             var cross = math.cross(up, direction);
             var forward = math.normalize( math.cross(cross, up ));
             var verticalSpeed = math.dot(velocity.Linear, gravity.GravityDirection);
-            
-            velocity.Linear = gravity.GravityDirection * verticalSpeed + forward * speed * deltaTime;
+            verticalSpeed = verticalSpeed < 0 ? 0 : verticalSpeed;
+
+            velocity.Linear = gravity.GravityDirection * verticalSpeed;// + forward * speed * deltaTime;*/
 
         }).ScheduleParallel(Dependency);
     }
 
     private static bool IsEmptyData(float3 targetPositon)
     {
-        return math.distancesq(targetPositon, new float3(0, 0, 0)) <= 0;
+        return math.lengthsq(targetPositon) <= 0;
     }
 
-    private static bool HasArrivedToDestination(float3 positon, float3 targetPositon)
+    private static bool HasArrivedToDestination(float3 positon, float3 targetPositon, float3 gravityVector, float actorScale)
     {
+        positon += gravityVector * actorScale / 2f;
         return math.distancesq(targetPositon, positon) <= 0.01f;
     }
 
@@ -76,13 +75,13 @@ public partial class MoveStateSystem : SystemBase
     {
         const float delta = 0.01f;
         var dot = math.dot(gravityVector, targetPositon - positon);
-        return dot >= 1 - delta;
+        return math.abs(dot) >= 1 - delta;
     }
 
     private static float3 GenerateTargetDistance(ref ActorRandomComponent random, float3 position, float3 planetCenter, float planetScale)
     {
         var randomTarget = random.Random.NextFloat3(new float3(-1, -1, -1), new float3(1, 1, 1));
-        var target = planetCenter + math.normalize(randomTarget) * planetScale;
+        var target = planetCenter + math.normalize(randomTarget) * planetScale / 2f;
         return target;
     }
 }

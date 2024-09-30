@@ -25,26 +25,29 @@ namespace Zoo.Physics
                 ForEach(
                 (
                     ref LocalTransform transform,
-                    in PhysicsVelocity velocity
+                    in PhysicsVelocity velocity,
+                    in GravityComponent gravity
                 ) =>
                 {
-                    if (math.distancesq(velocity.Linear, new float3()) <= 0.001f)
+                    if (math.lengthsq(velocity.Linear) <= 0.001f)
                     {
                         return;
                     }
 
-                    var up = math.normalize(transform.Position - planetCenter);
-                    var cross = math.cross(up, velocity.Linear);
+                    var verticalSpeed = math.dot(velocity.Linear, gravity.GravityDirection) * gravity.GravityDirection;
+                    var horizontalSpeed = velocity.Linear - verticalSpeed;
 
-                    if (math.distancesq(cross, new float3()) <= 0.00001f)
+                    if (math.lengthsq(horizontalSpeed) <= 0.001f)
                     {
                         return;
                     }
 
+                    var up = -gravity.GravityDirection;
+                    var cross = math.cross(up, horizontalSpeed);
                     var right = math.normalize(cross);
                     var forward = math.normalize(math.cross(right, up));
 
-                    transform.Rotation = new quaternion(new float3x3(right, up, forward));
+                    //transform.Rotation = new quaternion(new float3x3(right, up, forward));
                 }).ScheduleParallel();
         }
 

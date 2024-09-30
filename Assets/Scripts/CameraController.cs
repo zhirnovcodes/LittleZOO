@@ -3,13 +3,29 @@ using UnityEngine;
 public class CameraController : MonoBehaviour
 {
     [SerializeField] private Transform Planet;
+    [SerializeField] private Transform CameraHandle;
     [SerializeField] private Camera Camera;
     [SerializeField] private float MinOffset = 1f;
     [SerializeField] private float MaxOffset = 100f;
     [SerializeField] private float ZoomSpeed = 10f;
-    [SerializeField] private float ScrollSpeed = 10f;
+    [SerializeField] private float ScrollPower = 10f;
 
     private Vector3 ScreenGrabPoint;
+    private Quaternion HandleGrabRotation;
+
+    private float MinDistance;
+    private float MaxDistance;
+    private float NextDistance;
+
+    private void Start()
+    {
+        var planetScale = Planet.localScale.x;
+        var planetRadius = planetScale / 2f;
+        var cameraNearPlane = Camera.nearClipPlane;
+
+        MinDistance = planetRadius + MinOffset + cameraNearPlane;
+        MaxDistance = planetRadius + MaxOffset + cameraNearPlane;
+    }
 
     // Update is called once per frame
     void Update()
@@ -17,42 +33,40 @@ public class CameraController : MonoBehaviour
 
         var scrollDelta = Input.mouseScrollDelta.y;
 
+        var cameraPosition = Camera.transform.localPosition;
+        var distance = -cameraPosition.z;
+
         if (scrollDelta != 0)
         {
-            var planetPosition = Planet.position;
-            var planetScale = Planet.localScale.x;
-            var planetRadius = planetScale / 2f;
-            var cameraPosition = Camera.transform.position;
-            var cameraNearPlane = Camera.nearClipPlane;
-            var direction = planetPosition - cameraPosition;
-
-            var minDistance = planetRadius + MinOffset + cameraNearPlane;
-            var maxDistance = planetRadius + MaxOffset + cameraNearPlane;
-            var distance = direction.magnitude;
             var speed = ZoomSpeed * Time.deltaTime * scrollDelta;
 
-            var newDistance = Mathf.Clamp( distance + speed, minDistance, maxDistance);
-            var newPositon = planetPosition - direction / distance * newDistance;
+            NextDistance = Mathf.Clamp( distance + speed, MinDistance, MaxDistance);
+            Camera.transform.localPosition = new Vector3(0, 0, -Mathf.Lerp(distance, NextDistance, ZoomSpeed * Time.deltaTime));
+        }
 
-            Camera.transform.position = newPositon;
+        if (Mathf.Abs(distance - NextDistance) <= 0.01f)
+        {
         }
 
         if (Input.GetKeyDown(KeyCode.Mouse0))
         {
             ScreenGrabPoint = Input.mousePosition;
+            HandleGrabRotation = CameraHandle.transform.rotation;
         }
 
         if (Input.GetKey(KeyCode.Mouse0))
         {
             var screenPosition = Input.mousePosition;
             var drag = screenPosition - ScreenGrabPoint;
-            var axis = new Vector3(-drag.x, drag.y, 0);
+            var axis = new Vector3(-drag.y, drag.x, 0);
+            var euler = axis * ScrollPower;
+            CameraHandle.transform.rotation = HandleGrabRotation * Quaternion.Euler(euler);
+            /*
             var angle = ScrollSpeed * Time.deltaTime * Mathf.Clamp01(drag.magnitude);
 
             var rotation = Quaternion.AngleAxis(angle, axis);
 
             var planetPosition = Planet.position;
-            var cameraPosition = Camera.transform.position;
 
             var direction = cameraPosition - planetPosition;
             var directionNew = rotation * direction;
@@ -60,6 +74,7 @@ public class CameraController : MonoBehaviour
 
             Camera.transform.position = positionNew;
             Camera.transform.LookAt(Planet, Vector3.up);
+            */
         }
     }
 }

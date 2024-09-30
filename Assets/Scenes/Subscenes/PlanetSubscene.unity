@@ -156,8 +156,8 @@ MonoBehaviour:
     type: 3}
   PigsCount: 1000
   Planet: {fileID: 1378234246}
-  MinHeightAbovePlanet: 0
-  MaxHeightAbovePlanet: 0
+  MinHeightAbovePlanet: 10
+  MaxHeightAbovePlanet: 20
   PigSpeed: 50
   RandomSeed: 0
 --- !u!4 &806225738

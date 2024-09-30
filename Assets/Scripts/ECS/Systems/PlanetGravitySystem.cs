@@ -5,6 +5,8 @@ using Unity.Physics.Extensions;
 using Unity.Physics;
 using Unity.Mathematics;
 using Unity.Physics.Systems;
+using Unity.Jobs;
+using Unity.Collections;
 
 namespace Zoo.Physics
 {
@@ -28,7 +30,7 @@ namespace Zoo.Physics
             var worldSingleton = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
             var collisionWorld = worldSingleton.CollisionWorld;
 
-            Entities.
+            Dependency = Entities.
                 WithAll<GravityComponent>().
                 WithReadOnly(collisionWorld).
                 ForEach(
@@ -42,20 +44,16 @@ namespace Zoo.Physics
                 gravity.GravityDirection = math.normalize(planetCenter - transform.Position);
                 gravity.IsTouchingPlanet =
                     IsTouchingPlanet(gravity.GravityDirection, transform.Position, transform.Scale, in collisionWorld);
-                /*
-                if (gravity.IsTouchingPlanet)
-                {
-                    velocity.Linear = 0;
-                    gravity.GravityVelocity = 0;
-                    return;
-                }*/
 
-                var gravityImpulse = gravity.GravityDirection * GravityForce;// * deltaTime;
+                var gravityImpulse = gravity.GravityDirection * GravityForce * deltaTime;
 
-                //gravity.GravityVelocity += gravityImpulse / mass.InverseMass;
+                var verticalSpeed = math.dot(velocity.Linear, gravity.GravityDirection);
+                verticalSpeed = verticalSpeed < 0 ? 0 : verticalSpeed;
+
+                //velocity.Linear = gravity.GravityDirection * verticalSpeed;// + forward * speed * deltaTime;
+
                 velocity.ApplyLinearImpulse(in mass, gravityImpulse);
-                ///velocity.Linear = gravity.GravityVelocity;
-            }).ScheduleParallel();
+            }).ScheduleParallel(Dependency);
         }
 
         private static bool IsTouchingPlanet(float3 planetCenter, float planetScale, float3 actorPosition, float actorScale)
