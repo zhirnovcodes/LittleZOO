@@ -36,7 +36,10 @@ public static class JobLogger
     {
         System.Text.StringBuilder sb = new System.Text.StringBuilder();
         sb.Clear();
-        for (int i = 0, len = parts.Length; i < len; i++) sb.Append(parts[i].ToString());
+        for (int i = 0, len = parts.Length; i < len; i++)
+        {
+            sb.Append(parts[i].ToString());
+        }
         return sb.ToString();
     }
 }

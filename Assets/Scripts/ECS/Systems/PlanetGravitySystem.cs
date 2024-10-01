@@ -30,7 +30,7 @@ namespace Zoo.Physics
             var worldSingleton = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
             var collisionWorld = worldSingleton.CollisionWorld;
 
-            Dependency = Entities.
+            Entities.
                 WithAll<GravityComponent>().
                 WithReadOnly(collisionWorld).
                 ForEach(
@@ -51,9 +51,8 @@ namespace Zoo.Physics
                 verticalSpeed = verticalSpeed < 0 ? 0 : verticalSpeed;
 
                 //velocity.Linear = gravity.GravityDirection * verticalSpeed;// + forward * speed * deltaTime;
-
-                velocity.ApplyLinearImpulse(in mass, gravityImpulse);
-            }).ScheduleParallel(Dependency);
+                velocity.Linear += gravity.GravityDirection * GravityForce * deltaTime * mass.InverseMass;
+            }).ScheduleParallel();
         }
 
         private static bool IsTouchingPlanet(float3 planetCenter, float planetScale, float3 actorPosition, float actorScale)

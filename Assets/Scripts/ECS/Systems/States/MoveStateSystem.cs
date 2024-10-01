@@ -5,11 +5,11 @@ using Unity.Physics;
 using Unity.Transforms;
 using Zoo.Physics;
 
-[BurstCompile]
+//[BurstCompile]
 [UpdateInGroup(typeof(ZooPhysicsSystem))]
 public partial class MoveStateSystem : SystemBase
 {
-    [BurstCompile]
+    //[BurstCompile]
     protected override void OnUpdate()
     {
         var ecbSystem = World.GetOrCreateSystemManaged<EndSimulationEntityCommandBufferSystem>();
@@ -23,7 +23,7 @@ public partial class MoveStateSystem : SystemBase
 
         var deltaTime = SystemAPI.Time.DeltaTime;
 
-        Dependency = Entities.
+        Entities.
             WithAll<MovingStateData>().
             ForEach(
             (
@@ -36,15 +36,18 @@ public partial class MoveStateSystem : SystemBase
                 in GravityComponent gravity
             ) =>
         {
-            /*
+            // TODO to asset
+            const float horizontalDrag = 100f;
+
             if (IsEmptyData(movingData.TargetPosition))
             {
                 movingData.TargetPosition = GenerateTargetDistance(ref random, transform.Position, planetCenter, planetScale);
             }
 
-            if (HasArrivedToDestination(transform.Position, movingData.TargetPosition, gravity.GravityDirection, transform.Scale))
+            movingData.HasArivedToTarget = HasArrivedToDestination(transform.Position, movingData.TargetPosition, gravity.GravityDirection, transform.Scale);
+            if (movingData.HasArivedToTarget)
             {
-                movingData.TargetPosition = GenerateTargetDistance(ref random, transform.Position, planetCenter, planetScale);
+                return;
             }
 
             var speed = movingData.Speed;
@@ -52,12 +55,21 @@ public partial class MoveStateSystem : SystemBase
             var up = -gravity.GravityDirection;
             var cross = math.cross(up, direction);
             var forward = math.normalize( math.cross(cross, up ));
+
             var verticalSpeed = math.dot(velocity.Linear, gravity.GravityDirection);
+            var horizontalVelocity = velocity.Linear - verticalSpeed * gravity.GravityDirection;
             verticalSpeed = verticalSpeed < 0 ? 0 : verticalSpeed;
+            var verticalVelocity = gravity.GravityDirection * verticalSpeed;
+            horizontalVelocity = math.lerp(horizontalVelocity, forward * speed, math.clamp(horizontalDrag * deltaTime, 0, 1));
 
-            velocity.Linear = gravity.GravityDirection * verticalSpeed;// + forward * speed * deltaTime;*/
+            movingData.Forward = forward;
+            movingData.HorizontalSpeed = math.length(horizontalVelocity) / deltaTime;
+            movingData.HorizontalVelocity = horizontalVelocity;
+            movingData.VerticalSpeed = verticalSpeed;
+            movingData.VerticalVelocity = verticalVelocity;
 
-        }).ScheduleParallel(Dependency);
+            velocity.Linear = horizontalVelocity;// + verticalVelocity;
+        }).Run();
     }
 
     private static bool IsEmptyData(float3 targetPositon)

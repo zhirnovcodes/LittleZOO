@@ -29,6 +29,7 @@ namespace Zoo.Physics
                     in GravityComponent gravity
                 ) =>
                 {
+                    return;
                     if (math.lengthsq(velocity.Linear) <= 0.001f)
                     {
                         return;
