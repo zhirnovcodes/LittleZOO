@@ -5,6 +5,7 @@ public class CameraController : MonoBehaviour
     [SerializeField] private Transform Planet;
     [SerializeField] private Transform CameraHandle;
     [SerializeField] private Transform CameraDepthHandle;
+    [SerializeField] private Transform CameraRotationHandle;
     [SerializeField] private Camera Camera;
     [SerializeField] private float MinOffset = 1f;
     [SerializeField] private float MaxOffset = 100f;
@@ -12,6 +13,8 @@ public class CameraController : MonoBehaviour
     [SerializeField] private float ZoomPower = 10f;
     [SerializeField] private float ScrollPower = 10f;
     [SerializeField] private float ScrollSmoothness = 10f;
+    [SerializeField] private float MaxRotationAngle = 50f;
+    [SerializeField] private float RotationDepthStart = -30f;
 
     private Vector3 ScreenGrabPoint;
     private Vector3 LastRotation;
@@ -51,6 +54,10 @@ public class CameraController : MonoBehaviour
         if (Mathf.Abs(distance + NextZ) > 0.01f)
         {
             CameraDepthHandle.localPosition = new Vector3(0, 0, Mathf.Lerp(-distance, NextZ, Mathf.Clamp01( ZoomSpeed * Time.deltaTime )));
+            var z = CameraDepthHandle.localPosition.z;
+            var t = Mathf.InverseLerp(RotationDepthStart, -MinDistance, z);
+            var angle = Mathf.Lerp(0, MaxRotationAngle, t);
+            CameraRotationHandle.transform.localRotation = Quaternion.Euler(angle, 0, 0);
         }
 
         if (Input.GetKeyDown(KeyCode.Mouse0))
