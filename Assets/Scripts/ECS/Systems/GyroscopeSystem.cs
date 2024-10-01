@@ -29,7 +29,6 @@ namespace Zoo.Physics
                     in GravityComponent gravity
                 ) =>
                 {
-                    return;
                     if (math.lengthsq(velocity.Linear) <= 0.001f)
                     {
                         return;
@@ -48,7 +47,7 @@ namespace Zoo.Physics
                     var right = math.normalize(cross);
                     var forward = math.normalize(math.cross(right, up));
 
-                    //transform.Rotation = new quaternion(new float3x3(right, up, forward));
+                    transform.Rotation = new quaternion(new float3x3(right, up, forward));
                 }).ScheduleParallel();
         }
 

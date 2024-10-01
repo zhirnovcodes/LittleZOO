@@ -45,8 +45,10 @@ public partial class MoveStateSystem : SystemBase
             }
 
             movingData.HasArivedToTarget = HasArrivedToDestination(transform.Position, movingData.TargetPosition, gravity.GravityDirection, transform.Scale);
+            
             if (movingData.HasArivedToTarget)
             {
+                movingData.TargetPosition = GenerateTargetDistance(ref random, transform.Position, planetCenter, planetScale);
                 return;
             }
 
@@ -68,8 +70,8 @@ public partial class MoveStateSystem : SystemBase
             movingData.VerticalSpeed = verticalSpeed;
             movingData.VerticalVelocity = verticalVelocity;
 
-            velocity.Linear = horizontalVelocity;// + verticalVelocity;
-        }).Run();
+            velocity.Linear = horizontalVelocity + verticalVelocity;
+        }).ScheduleParallel();
     }
 
     private static bool IsEmptyData(float3 targetPositon)
