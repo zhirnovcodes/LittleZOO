@@ -56,11 +56,14 @@ public partial struct SpawnPigsSystem : ISystem
         commandBuffer.AddComponent(newPig, new ActorRandomComponent { Random = Unity.Mathematics.Random.CreateFromIndex(random.ValueRW.Random.NextUInt()) });
 
         // States
-        commandBuffer.AddComponent(newPig, new FallingStateData());
-        commandBuffer.AddComponent(newPig, new MovingStateData { Speed = spawnData.ValueRO.PigSpeed });
+        commandBuffer.AddComponent(newPig, new FallingStateTag());
+        commandBuffer.AddComponent(newPig, new MoveToTargetComponent { Speed = spawnData.ValueRO.PigSpeed });
 
-        commandBuffer.SetComponentEnabled<FallingStateData>(newPig, true);
-        commandBuffer.SetComponentEnabled<MovingStateData>(newPig, false);
+        commandBuffer.SetComponentEnabled<FallingStateTag>(newPig, true);
+        commandBuffer.SetComponentEnabled<MoveToTargetComponent>(newPig, false);
+
+        // Action chain
+        commandBuffer.AddBuffer<ActionChainItem>(newPig);
     }
 
     private quaternion GetRandomRotation(RefRW<ActorsSpawnRandomComponent> random, RefRO<ActorsSpawnComponent> spawnData, float3 spawnPosit) 

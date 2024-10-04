@@ -5,11 +5,11 @@ using Unity.Physics;
 using Unity.Transforms;
 using Zoo.Physics;
 
-//[BurstCompile]
+[BurstCompile]
 [UpdateInGroup(typeof(ZooPhysicsSystem))]
-public partial class MoveStateSystem : SystemBase
+public partial class MoveToTargetSystem : SystemBase
 {
-    //[BurstCompile]
+    [BurstCompile]
     protected override void OnUpdate()
     {
         var ecbSystem = World.GetOrCreateSystemManaged<EndSimulationEntityCommandBufferSystem>();
@@ -24,12 +24,12 @@ public partial class MoveStateSystem : SystemBase
         var deltaTime = SystemAPI.Time.DeltaTime;
 
         Entities.
-            WithAll<MovingStateData>().
+            WithAll<MoveToTargetComponent>().
             ForEach(
             (
                 Entity entity,
                 int entityInQueryIndex,
-                ref MovingStateData movingData,
+                ref MoveToTargetComponent movingData,
                 ref PhysicsVelocity velocity,
                 ref ActorRandomComponent random,
                 in LocalTransform transform,
@@ -52,7 +52,15 @@ public partial class MoveStateSystem : SystemBase
                 return;
             }
 
-            var speed = movingData.Speed;
+            var distanceToTargetSq = math.lengthsq(movingData.TargetPosition - transform.Position);
+
+            var horizontalSpeed = movingData.Speed;
+
+            if (distanceToTargetSq <= math.square(horizontalSpeed * deltaTime))
+            {
+                horizontalSpeed = math.sqrt(distanceToTargetSq) / deltaTime;
+            }
+
             var direction = movingData.TargetPosition - transform.Position;
             var up = -gravity.GravityDirection;
             var cross = math.cross(up, direction);
@@ -62,13 +70,7 @@ public partial class MoveStateSystem : SystemBase
             var horizontalVelocity = velocity.Linear - verticalSpeed * gravity.GravityDirection;
             verticalSpeed = verticalSpeed < 0 ? 0 : verticalSpeed;
             var verticalVelocity = gravity.GravityDirection * verticalSpeed;
-            horizontalVelocity = math.lerp(horizontalVelocity, forward * speed, math.clamp(horizontalDrag * deltaTime, 0, 1));
-
-            movingData.Forward = forward;
-            movingData.HorizontalSpeed = math.length(horizontalVelocity) / deltaTime;
-            movingData.HorizontalVelocity = horizontalVelocity;
-            movingData.VerticalSpeed = verticalSpeed;
-            movingData.VerticalVelocity = verticalVelocity;
+            horizontalVelocity = math.lerp(horizontalVelocity, forward * horizontalSpeed, math.clamp(horizontalDrag * deltaTime, 0, 1));
 
             velocity.Linear = horizontalVelocity + verticalVelocity;
         }).ScheduleParallel();

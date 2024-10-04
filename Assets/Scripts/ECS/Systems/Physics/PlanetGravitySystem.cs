@@ -76,8 +76,8 @@ namespace Zoo.Physics
                 End = endPos,
                 Filter = new CollisionFilter()
                 {
-                    BelongsTo = Layers.ActorDynamic,
-                    CollidesWith = Layers.Planet, 
+                    BelongsTo = Enums.Layers.ActorDynamic,
+                    CollidesWith = Enums.Layers.Planet, 
                     GroupIndex = 0
                 }
             };
