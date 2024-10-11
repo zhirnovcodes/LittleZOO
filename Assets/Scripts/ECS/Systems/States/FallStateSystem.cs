@@ -14,7 +14,7 @@ public partial class FallStateSystem : SystemBase
         //var ecb = ecbSingleton.CreateCommandBuffer(EntityManager.WorldUnmanaged).AsParallelWriter();
 
         /*
-        Dependency = Entities.
+        Entities.
             WithAll<FallingStateTag>().
             ForEach(
             (
@@ -29,6 +29,6 @@ public partial class FallStateSystem : SystemBase
                 ecb.SetComponentEnabled<FallingStateTag>(entityInQueryIndex, entity, false);
                 ecb.SetComponentEnabled<MoveToTargetComponent>(entityInQueryIndex, entity, true);
             }
-        }).ScheduleParallel(Dependency);*/
+        }).ScheduleParallel();*/
     }
 }

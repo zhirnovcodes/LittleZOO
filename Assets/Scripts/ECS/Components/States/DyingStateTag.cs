@@ -1,5 +1,5 @@
 using Unity.Entities;
 
-public struct DyingStateTag : IComponentData, IEnableableComponent
+public struct DyingStateTag : IComponentData, IEnableableComponent, IStateTag
 {
 }

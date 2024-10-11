@@ -61,4 +61,19 @@ public  static class StatesExtentions
         SetAllDisabled(entity, commandBuffer, sortKey);
         commandBuffer.SetComponentEnabled(sortKey, entity, GetStateTagComponentType(stateId), true);
     }
+
+
+    public static void SetState<T>(Entity entity, EntityCommandBuffer commandBuffer) where T: struct, IStateTag, IEnableableComponent
+    {
+        SetAllDisabled(entity, commandBuffer);
+        commandBuffer.SetComponentEnabled<T>(entity, true);
+    }
+
+    public static void SetState<T>(Entity entity, EntityCommandBuffer.ParallelWriter commandBuffer, int sortKey) where T : struct, IStateTag, IEnableableComponent
+    {
+        SetAllDisabled(entity, commandBuffer, sortKey);
+        commandBuffer.SetComponentEnabled<T>(sortKey, entity, true);
+    }
+
+
 }

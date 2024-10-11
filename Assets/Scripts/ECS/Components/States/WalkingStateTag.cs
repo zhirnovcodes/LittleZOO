@@ -1,6 +1,6 @@
 using Unity.Entities;
 
-public struct WalkingStateTag : IComponentData, IEnableableComponent
+public struct WalkingStateTag : IComponentData, IEnableableComponent, IStateTag
 {
 }
 
