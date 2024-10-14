@@ -4,6 +4,5 @@ using Unity.Entities;
 public struct ActionChainItem : IBufferElementData
 {
     public byte ActionId;
-    public Entity Actor;
-    public Entity Subject;
+    public Entity Target;
 }

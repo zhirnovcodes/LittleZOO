@@ -1,7 +1,8 @@
 using Unity.Entities;
 
-public struct CurrentActionComponent : IComponentData
+public struct CurrentActionComponent : IComponentData, IEnableableComponent
 {
     public byte ActionId;
-    public Entity Subject;
+    public uint ActionState;
+    public Entity Target;
 }

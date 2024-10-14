@@ -41,14 +41,15 @@ public partial class MoveToTargetSystem : SystemBase
 
             if (IsEmptyData(movingData.TargetPosition))
             {
-                movingData.TargetPosition = GenerateTargetDistance(ref random, transform.Position, planetCenter, planetScale);
+                return;
+                //movingData.TargetPosition = GenerateTargetDistance(ref random, transform.Position, planetCenter, planetScale);
             }
 
-            movingData.HasArivedToTarget = HasArrivedToDestination(transform.Position, movingData.TargetPosition, gravity.GravityDirection, transform.Scale);
+            movingData.HasArivedToTarget = HasArrivedToDestination(transform.Position, movingData.TargetPosition, gravity.GravityDirection, transform.Scale, movingData.TargetScale);
             
             if (movingData.HasArivedToTarget)
             {
-                movingData.TargetPosition = GenerateTargetDistance(ref random, transform.Position, planetCenter, planetScale);
+                //movingData.TargetPosition = GenerateTargetDistance(ref random, transform.Position, planetCenter, planetScale);
                 return;
             }
 
@@ -81,10 +82,14 @@ public partial class MoveToTargetSystem : SystemBase
         return math.lengthsq(targetPositon) <= 0;
     }
 
-    private static bool HasArrivedToDestination(float3 positon, float3 targetPositon, float3 gravityVector, float actorScale)
+    private static bool HasArrivedToDestination(float3 positon, float3 targetPositon, float3 gravityVector, float actorScale, float targetScale)
     {
-        positon += gravityVector * actorScale / 2f;
-        return math.distancesq(targetPositon, positon) <= 0.01f;
+        var actorPositionDown = positon + gravityVector * actorScale / 2f;
+        var targetPositionDown = targetPositon + gravityVector * targetScale / 2f;
+        const float delta = 0.01f;
+        var minDistanceSquared = (actorScale + targetScale) / 2f + delta;
+        minDistanceSquared *= minDistanceSquared;
+        return math.distancesq(actorPositionDown, targetPositionDown) <= minDistanceSquared;
     }
 
     private static bool HasArrivedToDestination(float3 positon, float3 targetPositon, float3 gravityVector)

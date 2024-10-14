@@ -18,6 +18,16 @@ public  static class StatesExtentions
         throw new System.NotImplementedException();
     }
 
+    private static void SetComponentDisabled<T>(Entity entity, EntityCommandBuffer commandBuffer) where T : struct, IStateTag, IEnableableComponent
+    {
+        commandBuffer.SetComponentEnabled<T>(entity, false);
+    }
+
+    private static void SetComponentDisabled<T>(Entity entity, EntityCommandBuffer.ParallelWriter commandBuffer, int sortKey) where T : struct, IStateTag, IEnableableComponent
+    {
+        commandBuffer.SetComponentEnabled<T>(sortKey, entity, false);
+    }
+
     private static void SetComponentDisabled(Entity entity, uint stateId, EntityCommandBuffer commandBuffer)
     {
         commandBuffer.SetComponentEnabled(entity, GetStateTagComponentType(stateId), false);
@@ -41,13 +51,13 @@ public  static class StatesExtentions
 
     private static void SetAllDisabled(Entity entity, EntityCommandBuffer.ParallelWriter commandBuffer, int sortKey)
     {
-        SetComponentDisabled(entity, States.Idle, commandBuffer, sortKey);
-        SetComponentDisabled(entity, States.Walking, commandBuffer, sortKey);
-        SetComponentDisabled(entity, States.Running, commandBuffer, sortKey);
-        SetComponentDisabled(entity, States.Sleeping, commandBuffer, sortKey);
-        SetComponentDisabled(entity, States.Dying, commandBuffer, sortKey);
-        SetComponentDisabled(entity, States.Eating, commandBuffer, sortKey);
-        SetComponentDisabled(entity, States.Falling, commandBuffer, sortKey);
+        SetComponentDisabled<IdleStateTag>(entity, commandBuffer, sortKey);
+        SetComponentDisabled<WalkingStateTag>(entity, commandBuffer, sortKey);
+        SetComponentDisabled<RunningStateTag>(entity, commandBuffer, sortKey);
+        SetComponentDisabled<SleepingStateTag>(entity, commandBuffer, sortKey);
+        SetComponentDisabled<DyingStateTag>(entity, commandBuffer, sortKey);
+        SetComponentDisabled<EatingStateTag>(entity, commandBuffer, sortKey);
+        SetComponentDisabled<FallingStateTag>(entity, commandBuffer, sortKey);
     }
 
     public static void SetState(Entity entity, uint stateId, EntityCommandBuffer commandBuffer)

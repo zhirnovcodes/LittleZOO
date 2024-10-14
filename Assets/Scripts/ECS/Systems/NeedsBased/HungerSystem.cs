@@ -25,9 +25,11 @@ public partial class HungerSystem : SystemBase
 
                 if (needs.Hunger <= 0)
                 {
+                    // Death
                     StatesExtentions.SetState<DyingStateTag>(entity, ecb, entityInQueryIndex);
 
                     ecb.SetComponentEnabled<ActorNeedsComponent>(entityInQueryIndex, entity, false);
+                    ecb.SetComponentEnabled<VisionComponent>(entityInQueryIndex, entity, false);
                 }
             }).ScheduleParallel();
     }
