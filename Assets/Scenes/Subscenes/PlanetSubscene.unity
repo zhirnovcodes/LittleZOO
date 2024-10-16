@@ -154,7 +154,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   PigPrefab: {fileID: 9209394379408463921, guid: 23c24860a7cd4cd4eb4119b6e8c05dc6,
     type: 3}
-  PigsCount: 1000
+  PigsCount: 100
   Planet: {fileID: 1378234246}
   MinHeightAbovePlanet: 0
   MaxHeightAbovePlanet: 20

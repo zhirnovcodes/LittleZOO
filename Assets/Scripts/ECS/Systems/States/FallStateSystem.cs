@@ -2,7 +2,7 @@ using Unity.Burst;
 using Unity.Entities;
 
 [BurstCompile]
-[UpdateInGroup(typeof(ZooPhysicsSystem))]
+[UpdateInGroup(typeof(ZooPhysicsSystemGroup))]
 [RequireMatchingQueriesForUpdate]
 public partial class FallStateSystem : SystemBase
 {

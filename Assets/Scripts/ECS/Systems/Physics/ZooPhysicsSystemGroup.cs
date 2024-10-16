@@ -3,12 +3,12 @@ using Unity.Physics.Systems;
 
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
 [UpdateBefore(typeof(PhysicsSystemGroup))]
-public partial class ZooPhysicsSystem : ComponentSystemGroup
+public partial class ZooPhysicsSystemGroup : ComponentSystemGroup
 {
 }
 
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
 [UpdateAfter(typeof(PhysicsSystemGroup))]
-public partial class ZooCollisionsSystem : ComponentSystemGroup
+public partial class ZooCollisionsSystemGroup : ComponentSystemGroup
 {
 }

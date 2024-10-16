@@ -21,7 +21,7 @@ public partial class HungerSystem : SystemBase
                 ref ActorNeedsComponent needs
             ) =>
             {
-                needs.Hunger -= needs.Hunger / needs.HungerDecayFactor * deltaTime;
+                needs.Hunger -= needs.HungerDecayFactor / 100f * deltaTime;
 
                 if (needs.Hunger <= 0)
                 {

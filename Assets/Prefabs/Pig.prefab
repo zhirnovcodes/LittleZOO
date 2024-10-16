@@ -602,6 +602,7 @@ GameObject:
   - component: {fileID: 1426175008938931099}
   - component: {fileID: 2191417328044980721}
   - component: {fileID: 2884413984555914228}
+  - component: {fileID: 5649999839609019709}
   m_Layer: 7
   m_Name: Pig
   m_TagString: Untagged
@@ -739,3 +740,17 @@ MonoBehaviour:
   IntervalMin: 0.2
   IntervalMax: 0.4
   Collider: {fileID: 3243867761299327988}
+--- !u!114 &5649999839609019709
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9209394379408463921}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: beac1e9fa58f8a04995224a9e9cbb142, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  HungerTuningFactor: 1
+  HungerDecayFactor: 5

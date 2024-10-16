@@ -6,16 +6,12 @@ using Unity.Transforms;
 using Zoo.Physics;
 
 [BurstCompile]
-[UpdateInGroup(typeof(ZooPhysicsSystem))]
+[UpdateInGroup(typeof(ZooPhysicsSystemGroup))]
 public partial class MoveToTargetSystem : SystemBase
 {
     [BurstCompile]
     protected override void OnUpdate()
     {
-        var ecbSystem = World.GetOrCreateSystemManaged<EndSimulationEntityCommandBufferSystem>();
-        var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
-        var ecb = ecbSingleton.CreateCommandBuffer(EntityManager.WorldUnmanaged).AsParallelWriter();
-
         var planetEntity = SystemAPI.GetSingletonEntity<PlanetComponent>();
         var planetTransform = SystemAPI.GetComponentRO<LocalTransform>(planetEntity);
         var planetCenter = planetTransform.ValueRO.Position;
@@ -24,14 +20,15 @@ public partial class MoveToTargetSystem : SystemBase
         var deltaTime = SystemAPI.Time.DeltaTime;
 
         Entities.
-            WithAll<MoveToTargetComponent>().
+            WithAll<MoveToTargetOutputComponent, MoveToTargetInputComponent>().
             ForEach(
             (
                 Entity entity,
                 int entityInQueryIndex,
-                ref MoveToTargetComponent movingData,
+                ref MoveToTargetOutputComponent movingOutputData,
                 ref PhysicsVelocity velocity,
                 ref ActorRandomComponent random,
+                in MoveToTargetInputComponent movingInputData,
                 in LocalTransform transform,
                 in GravityComponent gravity
             ) =>
@@ -39,30 +36,30 @@ public partial class MoveToTargetSystem : SystemBase
             // TODO to asset
             const float horizontalDrag = 100f;
 
-            if (IsEmptyData(movingData.TargetPosition))
+            if (IsEmptyData(movingInputData.TargetPosition))
             {
                 return;
                 //movingData.TargetPosition = GenerateTargetDistance(ref random, transform.Position, planetCenter, planetScale);
             }
 
-            movingData.HasArivedToTarget = HasArrivedToDestination(transform.Position, movingData.TargetPosition, gravity.GravityDirection, transform.Scale, movingData.TargetScale);
+            movingOutputData.HasArivedToTarget = HasArrivedToDestination(transform.Position, movingInputData.TargetPosition, gravity.GravityDirection, transform.Scale, movingInputData.TargetScale);
             
-            if (movingData.HasArivedToTarget)
+            if (movingOutputData.HasArivedToTarget)
             {
                 //movingData.TargetPosition = GenerateTargetDistance(ref random, transform.Position, planetCenter, planetScale);
                 return;
             }
 
-            var distanceToTargetSq = math.lengthsq(movingData.TargetPosition - transform.Position);
+            var distanceToTargetSq = math.lengthsq(movingInputData.TargetPosition - transform.Position);
 
-            var horizontalSpeed = movingData.Speed;
+            var horizontalSpeed = movingInputData.Speed;
 
             if (distanceToTargetSq <= math.square(horizontalSpeed * deltaTime))
             {
                 horizontalSpeed = math.sqrt(distanceToTargetSq) / deltaTime;
             }
 
-            var direction = movingData.TargetPosition - transform.Position;
+            var direction = movingInputData.TargetPosition - transform.Position;
             var up = -gravity.GravityDirection;
             var cross = math.cross(up, direction);
             var forward = math.normalize( math.cross(cross, up ));

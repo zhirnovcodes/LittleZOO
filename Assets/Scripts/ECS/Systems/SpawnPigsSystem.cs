@@ -57,10 +57,11 @@ public partial struct SpawnPigsSystem : ISystem
 
         // States
         commandBuffer.AddComponent(newPig, new FallingStateTag());
-        commandBuffer.AddComponent(newPig, new MoveToTargetComponent { Speed = spawnData.ValueRO.PigSpeed });
+        commandBuffer.AddComponent(newPig, new MoveToTargetInputComponent { Speed = spawnData.ValueRO.PigSpeed });
+        commandBuffer.AddComponent(newPig, new MoveToTargetOutputComponent());
 
         commandBuffer.SetComponentEnabled<FallingStateTag>(newPig, true);
-        commandBuffer.SetComponentEnabled<MoveToTargetComponent>(newPig, false);
+        commandBuffer.SetComponentEnabled<MoveToTargetInputComponent>(newPig, false);
 
         // Action chain
         commandBuffer.AddBuffer<ActionChainItem>(newPig);

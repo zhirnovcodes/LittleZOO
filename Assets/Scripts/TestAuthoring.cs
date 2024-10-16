@@ -23,7 +23,7 @@ public struct TestComponent : IComponentData
 
 }
 
-[UpdateInGroup(typeof(ZooPhysicsSystem))]
+[UpdateInGroup(typeof(ZooPhysicsSystemGroup))]
 public partial class TestSystem : SystemBase
 {
     protected override void OnUpdate()

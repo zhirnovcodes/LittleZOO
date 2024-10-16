@@ -50,18 +50,6 @@ namespace Zoo.Physics
                     transform.Rotation = new quaternion(new float3x3(right, up, forward));
                 }).ScheduleParallel();
         }
-
-        private static float3 EstimateAnglesBetween(quaternion from, quaternion to)
-        {
-            float3 fromImag = new float3(from.value.x, from.value.y, from.value.z);
-            float3 toImag = new float3(to.value.x, to.value.y, to.value.z);
-
-            float3 angle = math.cross(fromImag, toImag);
-            angle -= to.value.w * fromImag;
-            angle += from.value.w * toImag;
-            angle += angle;
-            return math.dot(toImag, fromImag) < 0 ? -angle : angle;
-        }
     }
 
 }

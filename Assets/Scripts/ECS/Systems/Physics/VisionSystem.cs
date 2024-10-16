@@ -6,7 +6,7 @@ using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
 
-[UpdateInGroup(typeof(ZooCollisionsSystem))]
+[UpdateInGroup(typeof(ZooCollisionsSystemGroup))]
 public partial class VisionSystem : SystemBase
 {
     protected override void OnUpdate()

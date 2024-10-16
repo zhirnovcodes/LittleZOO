@@ -11,7 +11,7 @@ using Unity.Collections;
 namespace Zoo.Physics
 {
     [BurstCompile]
-    [UpdateInGroup(typeof(ZooPhysicsSystem), OrderFirst = true)]
+    [UpdateInGroup(typeof(ZooPhysicsSystemGroup), OrderFirst = true)]
     [RequireMatchingQueriesForUpdate]
     public partial class PlanetGravitySystem : SystemBase
     {
