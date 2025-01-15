@@ -7,8 +7,9 @@ using Unity.Transforms;
 namespace Zoo.Physics
 {
     [BurstCompile]
-    [UpdateInGroup(typeof(SimulationSystemGroup))]
-    [UpdateAfter(typeof(TransformSystemGroup))]
+    [UpdateInGroup(typeof(ZooPhysicsSystemGroup), OrderLast = true)]
+    //[UpdateInGroup(typeof(SimulationSystemGroup))]
+    //[UpdateAfter(typeof(TransformSystemGroup))]
     public partial class GyroscopeSystem : SystemBase
     {
         [BurstCompile]

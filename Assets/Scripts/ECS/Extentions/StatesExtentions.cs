@@ -2,22 +2,6 @@ using Unity.Entities;
 
 public  static class StatesExtentions
 {
-    private static ComponentType GetStateTagComponentType(uint stateId)
-    {
-        switch (stateId)
-        {
-            case States.Idle: return typeof(IdleStateTag);
-            case States.Dying: return typeof(DyingStateTag);
-            case States.Falling: return typeof(FallingStateTag);
-            case States.Walking: return typeof(WalkingStateTag);
-            case States.Running: return typeof(RunningStateTag);
-            case States.Sleeping: return typeof(SleepingStateTag);
-            case States.Eating: return typeof(EatingStateTag);
-        }
-
-        throw new System.NotImplementedException();
-    }
-
     private static void SetComponentDisabled<T>(Entity entity, EntityCommandBuffer commandBuffer) where T : struct, IStateTag, IEnableableComponent
     {
         commandBuffer.SetComponentEnabled<T>(entity, false);
@@ -28,25 +12,15 @@ public  static class StatesExtentions
         commandBuffer.SetComponentEnabled<T>(sortKey, entity, false);
     }
 
-    private static void SetComponentDisabled(Entity entity, uint stateId, EntityCommandBuffer commandBuffer)
-    {
-        commandBuffer.SetComponentEnabled(entity, GetStateTagComponentType(stateId), false);
-    }
-
-    private static void SetComponentDisabled(Entity entity, uint stateId, EntityCommandBuffer.ParallelWriter commandBuffer, int sortKey)
-    {
-        commandBuffer.SetComponentEnabled(sortKey, entity, GetStateTagComponentType(stateId), false);
-    }
-
     private static void SetAllDisabled(Entity entity, EntityCommandBuffer commandBuffer)
     {
-        SetComponentDisabled(entity, States.Idle, commandBuffer);
-        SetComponentDisabled(entity, States.Walking, commandBuffer);
-        SetComponentDisabled(entity, States.Running, commandBuffer);
-        SetComponentDisabled(entity, States.Sleeping, commandBuffer);
-        SetComponentDisabled(entity, States.Dying, commandBuffer);
-        SetComponentDisabled(entity, States.Eating, commandBuffer);
-        SetComponentDisabled(entity, States.Falling, commandBuffer);
+        SetComponentDisabled<IdleStateTag>(entity, commandBuffer);
+        SetComponentDisabled<WalkingStateTag>(entity, commandBuffer);
+        SetComponentDisabled<RunningStateTag>(entity, commandBuffer);
+        SetComponentDisabled<SleepingStateTag>(entity, commandBuffer);
+        SetComponentDisabled<DyingStateTag>(entity, commandBuffer);
+        SetComponentDisabled<EatingStateTag>(entity, commandBuffer);
+        SetComponentDisabled<FallingStateTag>(entity, commandBuffer);
     }
 
     private static void SetAllDisabled(Entity entity, EntityCommandBuffer.ParallelWriter commandBuffer, int sortKey)
@@ -59,19 +33,6 @@ public  static class StatesExtentions
         SetComponentDisabled<EatingStateTag>(entity, commandBuffer, sortKey);
         SetComponentDisabled<FallingStateTag>(entity, commandBuffer, sortKey);
     }
-
-    public static void SetState(Entity entity, uint stateId, EntityCommandBuffer commandBuffer)
-    {
-        SetAllDisabled(entity, commandBuffer);
-        commandBuffer.SetComponentEnabled(entity, GetStateTagComponentType(stateId), true);
-    }
-
-    public static void SetState(Entity entity, uint stateId, EntityCommandBuffer.ParallelWriter commandBuffer, int sortKey)
-    {
-        SetAllDisabled(entity, commandBuffer, sortKey);
-        commandBuffer.SetComponentEnabled(sortKey, entity, GetStateTagComponentType(stateId), true);
-    }
-
 
     public static void SetState<T>(Entity entity, EntityCommandBuffer commandBuffer) where T: struct, IStateTag, IEnableableComponent
     {

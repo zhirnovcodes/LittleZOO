@@ -8,7 +8,7 @@ public partial class EatingActionSystem : SystemBase
     protected override void OnUpdate()
     {
         var deltaTime = SystemAPI.Time.DeltaTime;
-        var ecb = new EntityCommandBuffer(Allocator.TempJob).AsParallelWriter();
+        ///var ecb = new EntityCommandBuffer(Allocator.TempJob).AsParallelWriter();
 
 
         //new EatingActionJob

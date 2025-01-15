@@ -9,7 +9,9 @@ public partial class HungerSystem : SystemBase
 
     protected override void OnUpdate()
     {
-        var ecb = new EntityCommandBuffer(Allocator.TempJob).AsParallelWriter();
+        var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
+        var ecb = ecbSingleton.CreateCommandBuffer(EntityManager.WorldUnmanaged).AsParallelWriter();
+        //var ecb = new EntityCommandBuffer(Allocator.TempJob).AsParallelWriter();
         var deltaTime = SystemAPI.Time.DeltaTime;
 
         Entities.

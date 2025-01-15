@@ -1,4 +1,5 @@
 using Unity.Burst;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -59,12 +60,17 @@ public partial struct SpawnPigsSystem : ISystem
         commandBuffer.AddComponent(newPig, new FallingStateTag());
         commandBuffer.AddComponent(newPig, new MoveToTargetInputComponent { Speed = spawnData.ValueRO.PigSpeed });
         commandBuffer.AddComponent(newPig, new MoveToTargetOutputComponent());
+        commandBuffer.AddComponent(newPig, new DecisionMakingComponent
+        {
+            CreatedActions = new NativeList<ActionComponent>(Allocator.Persistent)
+        });
 
         commandBuffer.SetComponentEnabled<FallingStateTag>(newPig, true);
         commandBuffer.SetComponentEnabled<MoveToTargetInputComponent>(newPig, false);
 
         // Action chain
         commandBuffer.AddBuffer<ActionChainItem>(newPig);
+        commandBuffer.AddBuffer<DeleteActionItem>(newPig);
     }
 
     private quaternion GetRandomRotation(RefRW<ActorsSpawnRandomComponent> random, RefRO<ActorsSpawnComponent> spawnData, float3 spawnPosit) 

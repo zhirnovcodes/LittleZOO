@@ -28,11 +28,11 @@ namespace Zoo.Physics
             var planetScale = planetTransform.ValueRO.Scale;
 
             var worldSingleton = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
-            var collisionWorld = worldSingleton.CollisionWorld;
+            //var collisionWorld = worldSingleton.CollisionWorld;
 
             Entities.
                 WithAll<GravityComponent>().
-                WithReadOnly(collisionWorld).
+                //WithReadOnly(collisionWorld).
                 ForEach(
                 (
                     ref PhysicsVelocity velocity,
@@ -42,8 +42,8 @@ namespace Zoo.Physics
                 ) =>
             {
                 gravity.GravityDirection = math.normalize(planetCenter - transform.Position);
-                gravity.IsTouchingPlanet =
-                    IsTouchingPlanet(gravity.GravityDirection, transform.Position, transform.Scale, in collisionWorld);
+                //gravity.IsTouchingPlanet =
+                    //IsTouchingPlanet(gravity.GravityDirection, transform.Position, transform.Scale, in collisionWorld);
 
                 var gravityImpulse = gravity.GravityDirection * GravityForce * deltaTime;
 

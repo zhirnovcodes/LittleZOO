@@ -4,129 +4,140 @@ using Unity.Jobs;
 using Unity.Transforms;
 
 [UpdateInGroup(typeof(AISystemGroup), OrderFirst = true)]
+public partial class DeleteActionsSystem : SystemBase
+{
+    protected override void OnUpdate()
+    {
+        var deletonQueue = new NativeQueue<Entity>(Allocator.Temp);
+        var deletedBufferActors = new NativeQueue<Entity>(Allocator.Temp);
+
+        foreach (var deleteBuffer in SystemAPI.Query<DynamicBuffer<DeleteActionItem>>())
+        {
+            foreach (var item in deleteBuffer)
+            {
+                deletonQueue.Enqueue(item.Action);
+                deletedBufferActors.Enqueue(item.Actor);
+            }
+
+            deleteBuffer.Clear();
+        }
+
+        while (deletonQueue.IsEmpty() == false)
+        {
+            var action = deletonQueue.Dequeue();
+            var actor = deletedBufferActors.Dequeue();
+
+            var actionBuffer = SystemAPI.GetBuffer<ActionChainItem>(actor);
+            actionBuffer.RemoveAt(0);
+
+            EntityManager.DestroyEntity(action);
+
+        }
+
+    }
+}
+
+[UpdateInGroup(typeof(AISystemGroup), OrderLast = true)]
 public partial class NeedBasedDecisionSystem : SystemBase
 {
     protected override void OnUpdate()
     {
-        var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
-        var ecb = ecbSingleton.CreateCommandBuffer(EntityManager.WorldUnmanaged).AsParallelWriter();
+        var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
+        var ecb = ecbSingleton.CreateCommandBuffer(EntityManager.WorldUnmanaged);
+        var actionLookup = SystemAPI.GetComponentLookup<ActionComponent>(true);
 
-        var actionLookup = GetComponentLookup<ActionComponent>();
-
-        /*new ActionChainJob
-        {
-            Ecb = ecb,
-            ActionLookup = actionLookup
-        }.ScheduleParallel();*/
-
-        new DecisionMakingJob
-        {
-            Ecb = ecb
-        }.ScheduleParallel();
-        
-    }
-
-    private partial struct DecisionMakingJob : IJobEntity
-    {
-        public EntityCommandBuffer.ParallelWriter Ecb;
-
-        private void Execute(
-                Entity entity,
-                [EntityIndexInQuery] int entityInQueryIndex,
-                ref DynamicBuffer<ActionChainItem> buffer,
-                ref ActorRandomComponent random
-            )
-        {
-            if (buffer.IsEmpty == false)
+        Entities.
+            WithReadOnly(actionLookup).
+            ForEach
+            ((
+                Entity actor,
+                ref ActorRandomComponent random,
+                in DynamicBuffer<ActionChainItem> decisions
+            ) =>
             {
-                return;
-            }
-
-            if (MakeDecision(out var newItem, Ecb, entityInQueryIndex, entity, ref random))
-            {
-                buffer.Add(newItem);
-                return;
-            }
-
-            return;
-        }
-
-
-        private static bool MakeDecision(out ActionChainItem result, EntityCommandBuffer.ParallelWriter ecb, int sortIndex, Entity actor, ref ActorRandomComponent random)
-        {
-            var entity = ecb.CreateEntity(sortIndex);
-            var actionId = Zoo.Enums.Actions.Search;
-
-            ecb.AddComponent(sortIndex, entity, new Parent
-            {
-                Value = actor
-            });
-
-            ecb.AddComponent(sortIndex, entity, new ActionComponent
-            {
-                Target = actor,
-                Actor = actor,
-                ActionId = actionId
-            });
-
-            ecb.AddComponent(sortIndex, entity, new SearchActionComponent());
-            ecb.AddComponent(sortIndex, entity, new ActionRandomComponent
-            {
-                Random = new Unity.Mathematics.Random(random.Random.NextUInt())
-            });
-
-            result = new ActionChainItem
-            {
-                Action = entity
-            };
-
-            return true;
-        }
-    }
-
-    private partial struct ActionChainJob : IJobEntity
-    {
-        [ReadOnly] public ComponentLookup<ActionComponent> ActionLookup;
-        public EntityCommandBuffer.ParallelWriter Ecb;
-
-        private void Execute
-            (
-                Entity entity,
-                [EntityIndexInQuery] int entityInQueryIndex,
-                ref DynamicBuffer<ActionChainItem> buffer
-            )
-        {
-            if (buffer.IsEmpty)
-            {
-                StatesExtentions.SetState<IdleStateTag>(entity, Ecb, entityInQueryIndex);
-                return;
-            }
-
-            var firstItem = buffer[0];
-
-            var currentAction = ActionLookup.GetRefRO(firstItem.Action);
-
-            if (currentAction.IsValid)
-            {
-                var state = currentAction.ValueRO.ActionState;
-
-                if (state == Zoo.Enums.ActionStates.Canceled
-                    || state == Zoo.Enums.ActionStates.Failed
-                    || state == Zoo.Enums.ActionStates.Succeded)
+                if (decisions.IsEmpty)
                 {
-                    buffer.RemoveAt(0);
-                    Ecb.DestroyEntity(entityInQueryIndex, firstItem.Action);
-
-                    if (buffer.IsEmpty)
+                    if (MakeDecision(out var actionComponent, actor))
                     {
+                        var action = CreateAction(actionComponent, ecb, actor, ref random);
                         return;
                     }
-
-                    var newAction = buffer[0];
-                    Ecb.SetComponentEnabled<ActionComponent>(entityInQueryIndex, newAction.Action, true);
+                    else
+                    {
+                        StatesExtentions.SetState<IdleStateTag>(actor, ecb);
+                        return;
+                    }
                 }
 
-            }
-        }
+                var firstItem = decisions[0];
+
+                var currentAction = actionLookup.GetRefRO(firstItem.Action);
+
+                if (currentAction.IsValid)
+                {
+                    var state = currentAction.ValueRO.ActionState;
+
+                    if (state == Zoo.Enums.ActionStates.Canceled
+                        || state == Zoo.Enums.ActionStates.Failed
+                        || state == Zoo.Enums.ActionStates.Succeded)
+                    {
+                        var deleteAction = new DeleteActionItem
+                        {
+                            Action = firstItem.Action,
+                            Actor = actor,
+                            Index = 0
+                        };
+
+                        ecb.AppendToBuffer(actor, deleteAction);
+
+                        if (decisions.Length >= 1)
+                        {
+                            return;
+                        }
+
+                        var newAction = decisions[1];
+                        ecb.SetComponentEnabled<ActionComponent>(newAction.Action, true);
+                    }
+
+                }
+            }).Schedule();
+    }
+
+
+    private static Entity CreateAction(ActionComponent actionComponent, EntityCommandBuffer commandBuffer, Entity actor, ref ActorRandomComponent randomComponent)
+    {
+        var entity = commandBuffer.CreateEntity();
+
+        commandBuffer.AddComponent(entity, new Parent { Value = actor });
+
+        commandBuffer.AddComponent(entity, actionComponent);
+
+        commandBuffer.AddComponent(entity, new SearchActionComponent());
+
+        commandBuffer.AddComponent(entity, new ActionRandomComponent
+        {
+            Random = new Unity.Mathematics.Random(randomComponent.Random.NextUInt())
+        });
+
+        commandBuffer.AppendToBuffer(actor, new ActionChainItem
+        {
+            Action = entity
+        });
+
+        return entity;
+    }
+
+    private static bool MakeDecision(out ActionComponent result, Entity actor)
+    {
+        var actionId = Zoo.Enums.Actions.Search;
+
+        result = new ActionComponent
+        {
+            Target = actor,
+            Actor = actor,
+            ActionId = actionId
+        };
+
+        return true;
     }
 }
