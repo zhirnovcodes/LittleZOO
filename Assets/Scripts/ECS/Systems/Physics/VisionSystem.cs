@@ -33,6 +33,50 @@ public partial class VisionSystem : SystemBase
     }
 
     [BurstCompile]
+    public partial struct SpereCollisionJob : IJobEntity
+    {
+        [ReadOnly] public CollisionWorld World;
+        [ReadOnly] public CollisionFilter Filter;
+
+        public float Radius;
+
+        [BurstCompile]
+        private void Execute(
+            Entity entity,
+            ref DynamicBuffer<CollisionItem> collisionItems,
+            in LocalTransform transform)
+        {
+            var list = new NativeList<ColliderCastHit>(Allocator.Temp);
+            var origin = transform.Position;
+
+            World.SphereCastAll(origin, Radius, new float3(0, 0, 1), 0, ref list, Filter);
+
+            collisionItems.Clear();
+
+            const uint capacity = 16;
+
+            foreach (var hit in list)
+            {
+                if (hit.Entity == entity)
+                {
+                    continue;
+                }
+
+                collisionItems.Add(new CollisionItem
+                {
+                    CollidedEntity = hit.Entity
+                }); ;
+
+                if (collisionItems.Length >= capacity)
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+
+    [BurstCompile]
     public partial struct VisionJob : IJobEntity
     {
         [ReadOnly] public CollisionWorld World;

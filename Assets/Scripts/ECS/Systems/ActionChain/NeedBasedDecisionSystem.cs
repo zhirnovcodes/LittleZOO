@@ -129,7 +129,7 @@ public partial class NeedBasedDecisionSystem : SystemBase
 
     private static bool MakeDecision(out ActionComponent result, Entity actor)
     {
-        var actionId = Zoo.Enums.Actions.Search;
+        var actionId = Zoo.Enums.ActionID.Search;
 
         result = new ActionComponent
         {

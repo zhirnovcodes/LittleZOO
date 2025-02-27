@@ -13,6 +13,7 @@ public partial struct SpawnPigsSystem : ISystem
     public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<ActorsSpawnComponent>();
+        state.RequireForUpdate<PlanetComponent>();
     }
 
     [BurstCompile]

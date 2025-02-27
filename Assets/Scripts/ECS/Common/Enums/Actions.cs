@@ -1,9 +1,9 @@
 namespace Zoo.Enums
 {
-    public static class Actions
+    public enum ActionID : byte
     {
-        public const byte Search = 0;
-        public const byte Eat = 1;
-        public const byte Sleep = 2;
+        Search,
+        Eat,
+        Sleep
     }
 }

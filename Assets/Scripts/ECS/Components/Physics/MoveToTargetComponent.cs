@@ -4,6 +4,7 @@ using Unity.Mathematics;
 public struct MoveToTargetOutputComponent : IComponentData
 {
     public bool HasArivedToTarget;
+    public bool NoTargetSet;
 }
 
 public struct MoveToTargetInputComponent : IComponentData, IEnableableComponent

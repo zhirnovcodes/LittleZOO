@@ -2,7 +2,7 @@ using Unity.Entities;
 
 public struct ActorNeedsComponent : IComponentData, IEnableableComponent
 {
-    public float Hunger;
+    public float Fullness;
     public float Energy;
 
     // Decay functions

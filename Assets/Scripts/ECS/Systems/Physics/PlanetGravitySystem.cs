@@ -1,61 +1,72 @@
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Transforms;
-using Unity.Physics.Extensions;
 using Unity.Physics;
 using Unity.Mathematics;
-using Unity.Physics.Systems;
-using Unity.Jobs;
-using Unity.Collections;
 
 namespace Zoo.Physics
 {
     [BurstCompile]
     [UpdateInGroup(typeof(ZooPhysicsSystemGroup), OrderFirst = true)]
     [RequireMatchingQueriesForUpdate]
-    public partial class PlanetGravitySystem : SystemBase
+    public partial struct PlanetGravitySystem : ISystem
     {
-        // TODO to blob
+        // TODO move to blob
         private const float GravityForce = 9.8f;
 
         [BurstCompile]
-        protected override void OnUpdate()
+        public void OnCreate(ref SystemState state)
         {
-            var deltaTime = SystemAPI.Time.DeltaTime;
-            var planetEntity = SystemAPI.GetSingletonEntity<PlanetComponent>();
-            var planetTransform = SystemAPI.GetComponentRO<LocalTransform>(planetEntity);
-            var planetCenter = planetTransform.ValueRO.Position;
-            var planetScale = planetTransform.ValueRO.Scale;
-
-            var worldSingleton = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
-            //var collisionWorld = worldSingleton.CollisionWorld;
-
-            Entities.
-                WithAll<GravityComponent>().
-                //WithReadOnly(collisionWorld).
-                ForEach(
-                (
-                    ref PhysicsVelocity velocity,
-                    ref GravityComponent gravity,
-                    in LocalTransform transform,
-                    in PhysicsMass mass
-                ) =>
-            {
-                gravity.GravityDirection = math.normalize(planetCenter - transform.Position);
-                //gravity.IsTouchingPlanet =
-                    //IsTouchingPlanet(gravity.GravityDirection, transform.Position, transform.Scale, in collisionWorld);
-
-                var gravityImpulse = gravity.GravityDirection * GravityForce * deltaTime;
-
-                var verticalSpeed = math.dot(velocity.Linear, gravity.GravityDirection);
-                verticalSpeed = verticalSpeed < 0 ? 0 : verticalSpeed;
-
-                //velocity.Linear = gravity.GravityDirection * verticalSpeed;// + forward * speed * deltaTime;
-                velocity.Linear += gravity.GravityDirection * GravityForce * deltaTime * mass.InverseMass;
-            }).ScheduleParallel();
+            state.RequireForUpdate<GravityComponent>();
+            state.RequireForUpdate<PlanetComponent>();
         }
 
-        private static bool IsTouchingPlanet(float3 planetCenter, float planetScale, float3 actorPosition, float actorScale)
+        [BurstCompile]
+        public void OnUpdate(ref SystemState state)
+        {
+            float deltaTime = SystemAPI.Time.DeltaTime;
+
+            var planetEntity = SystemAPI.GetSingletonEntity<PlanetComponent>();
+            var planetTransform = SystemAPI.GetComponentRO<LocalTransform>(planetEntity);
+            float3 planetCenter = planetTransform.ValueRO.Position;
+
+            var gravityJob = new GravityJob
+            {
+                DeltaTime = deltaTime,
+                PlanetCenter = planetCenter
+            };
+
+            state.Dependency = gravityJob.ScheduleParallel(state.Dependency);
+        }
+
+        [BurstCompile]
+        public partial struct GravityJob : IJobEntity
+        {
+            public float DeltaTime;
+            public float3 PlanetCenter;
+
+            public void Execute(
+                ref PhysicsVelocity velocity,
+                ref GravityComponent gravity,
+                in LocalTransform transform,
+                in PhysicsMass mass)
+            {
+                gravity.GravityDirection = math.normalize(PlanetCenter - transform.Position);
+                float3 gravityImpulse = gravity.GravityDirection * GravityForce * DeltaTime;
+
+                //float verticalSpeed = math.dot(velocity.Linear, gravity.GravityDirection);
+                //verticalSpeed = verticalSpeed < 0 ? 0 : verticalSpeed;
+
+                velocity.Linear += gravityImpulse * mass.InverseMass;
+            }
+        }
+    }
+}
+
+
+/*
+ * 
+ *         private static bool IsTouchingPlanet(float3 planetCenter, float planetScale, float3 actorPosition, float actorScale)
         {
 
             var minDistance = planetScale / 2f + actorScale / 2f;
@@ -84,5 +95,5 @@ namespace Zoo.Physics
 
             return world.CastRay(input);
         }
-    }
-}
+
+*/

@@ -1,4 +1,6 @@
-﻿public struct IdleActionComponent : IActionComponent
+﻿using Unity.Mathematics;
+
+public struct IdleActionComponent : IActionComponent
 {
 }
 
@@ -8,6 +10,7 @@ public struct SearchActionComponent : IActionComponent
 
 public struct EatingActionComponent : IActionComponent
 {
+    public float BiteTimeElapsed;
 }
 
 
