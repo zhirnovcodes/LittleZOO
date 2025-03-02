@@ -2,93 +2,106 @@ using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
 
-public partial class HungerSystem : SystemBase
+public partial struct HungerSystem : ISystem
 {
-    protected override void OnCreate()
+    private ComponentLookup<EdibleComponent> EdibleItems;
+    private ComponentLookup<LocalTransform> TransformLookup;
+
+    public void OnCreate(ref SystemState state)
+    {
+        EdibleItems = state.GetComponentLookup<EdibleComponent>(true);
+        TransformLookup = state.GetComponentLookup<LocalTransform>(true);
+    }
+
+    public void OnDestroy(ref SystemState state)
     {
     }
 
-    protected override void OnUpdate()
+    public void OnUpdate(ref SystemState state)
     {
-        var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
-        var ecb = ecbSingleton.CreateCommandBuffer(EntityManager.WorldUnmanaged).AsParallelWriter();
-        //var ecb = new EntityCommandBuffer(Allocator.TempJob).AsParallelWriter();
-        
+        EdibleItems.Update(ref state);
+        TransformLookup.Update(ref state);
+
         var deltaTime = SystemAPI.Time.DeltaTime;
-        var edibleItems = SystemAPI.GetComponentLookup<EdibleComponent>(true);
-        var transformLookup = SystemAPI.GetComponentLookup<LocalTransform>(true);
+        var ecb = new EntityCommandBuffer(Allocator.TempJob);
 
-        Entities.
-            WithAll<ActorNeedsComponent, HungerComponent>().
-            ForEach(
-                (
-                    ref ActorNeedsComponent needs,
-                    ref HungerComponent hunger
-                ) =>
-                {
-                    needs.Fullness -= hunger.HungerIncrease;
+        // Process hunger and destroy starved entities
+        foreach (var (needs, entity) in
+                 SystemAPI.Query<RefRW<ActorNeedsComponent>>()
+                     .WithAll<ActorNeedsComponent, HungerComponent>().WithEntityAccess())
+        {
+            needs.ValueRW.Fullness -= needs.ValueRW.HungerDecayFactor * deltaTime;
 
-                    if (needs.Fullness <= 0)
-                    {
-                        // DIE
-                    }
-
-                    hunger.HungerIncrease = 0;
-                }
-            ).Run();
-
-        Entities.
-            WithAll<ActorNeedsComponent, HungerComponent>().
-            ForEach(
-            (
-                Entity entity,
-                //int entityInQueryIndex,
-                ref HungerComponent hunger,
-                in ActorNeedsComponent needs,
-                in DynamicBuffer<VisionItem> vision
-            ) =>
+            if (needs.ValueRW.Fullness <= 0)
             {
-                // TODO in blob
-                //const FoodPreferences foodPreference = FoodPreferences.Herbivore;
+                ecb.DestroyEntity(entity);
+                continue;
+            }
+        }
 
-                hunger.HungerIncrease += needs.HungerDecayFactor / 100f * deltaTime;
-                hunger.Target = Entity.Null;
+        ecb.Playback(state.EntityManager);
+        ecb.Dispose();
 
-                var edibleItemsList = new NativeList<Entity>(vision.Length, Allocator.Temp);
+        // Schedule a parallel job for finding food targets
 
-                foreach (var visibleItem in vision)
+        state.Dependency = new FindFoodTargetsJob
+        {
+            EdibleItems = EdibleItems,
+            TransformLookup = TransformLookup,
+            DeltaTime = deltaTime
+        }.ScheduleParallel(state.Dependency);
+    }
+
+    [BurstCompile]
+    private partial struct FindFoodTargetsJob : IJobEntity
+    {
+        [ReadOnly] public ComponentLookup<EdibleComponent> EdibleItems;
+        [ReadOnly] public ComponentLookup<LocalTransform> TransformLookup;
+        public float DeltaTime;
+
+        void Execute(Entity entity, ref HungerComponent hunger, in ActorNeedsComponent needs, in DynamicBuffer<VisionItem> vision)
+        {
+            // TODO in blob
+            //const FoodPreferences foodPreference = FoodPreferences.Herbivore;
+
+            hunger.Target = Entity.Null;
+
+            var edibleItemsList = new NativeList<Entity>(vision.Length, Allocator.Temp);
+
+            foreach (var visibleItem in vision)
+            {
+                if (EdibleItems.TryGetComponent(visibleItem.VisibleEntity, out var edible))
                 {
-                    if (edibleItems.TryGetComponent(visibleItem.VisibleEntity, out var edible))
-                    {
-                        // TODO to blob
-                       //var targetType = FoodTypes.Plant;
+                    // TODO to blob
+                    //var targetType = FoodTypes.Plant;
 
-                        // TODO pref check
-                        edibleItemsList.AddNoResize(visibleItem.VisibleEntity);
-                    }
+                    // TODO pref check
+                    edibleItemsList.AddNoResize(visibleItem.VisibleEntity);
                 }
+            }
 
-                if (edibleItemsList.Length <= 0)
-                {
-                    edibleItemsList.Dispose();
-                    return;
-                }
-
-                var comparer = new EntityDistanceComparer
-                {
-                    ReferenceEntity = entity,
-                    TransformLookup = transformLookup
-                };
-
-                edibleItemsList.Sort(comparer);
-
-                hunger.Target = edibleItemsList[0];
-
+            if (edibleItemsList.Length <= 0)
+            {
                 edibleItemsList.Dispose();
-            }).ScheduleParallel();
+                return;
+            }
+
+            var comparer = new EntityDistanceComparer
+            {
+                ReferenceEntity = entity,
+                TransformLookup = TransformLookup
+            };
+
+            edibleItemsList.Sort(comparer);
+
+            hunger.Target = edibleItemsList[0];
+
+            edibleItemsList.Dispose();
+        }
     }
 
     [BurstCompile]

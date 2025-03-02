@@ -17,13 +17,14 @@ public class ActorsSpawnAuthoring : MonoBehaviour
     public float GrassRadiusMax;
     public float GrassWholenessMin;
     public float GrassWholenessMax;
-    
+    public float GrassNutritionMin = 10;
+    public float GrassNutritionMax = 20;
+
     public class ActorsSpawnBaker : Baker<ActorsSpawnAuthoring>
     {
         public override void Bake(ActorsSpawnAuthoring authoring)
         {
             var entity = GetEntity(TransformUsageFlags.None);
-
 
             AddComponent(entity, new ActorsSpawnComponent 
             { 
@@ -37,7 +38,9 @@ public class ActorsSpawnAuthoring : MonoBehaviour
                 GrassCount = authoring.GrassCount,
                 GrassRadiusMax = authoring.GrassRadiusMax,
                 GrassWholenessMin = authoring.GrassWholenessMin,
-                GrassWholenessMax = authoring.GrassWholenessMax
+                GrassWholenessMax = authoring.GrassWholenessMax,
+                GrassNutritionMin = authoring.GrassNutritionMin,
+                GrassNutritionMax = authoring.GrassNutritionMax
             });
 
             AddComponent(entity, new ActorsSpawnRandomComponent

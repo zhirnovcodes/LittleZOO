@@ -8,6 +8,7 @@ public partial class DeleteActionsSystem : SystemBase
 {
     protected override void OnUpdate()
     {
+        return;
         var deletonQueue = new NativeQueue<Entity>(Allocator.Temp);
         var deletedBufferActors = new NativeQueue<Entity>(Allocator.Temp);
 
@@ -42,6 +43,7 @@ public partial class NeedBasedDecisionSystem : SystemBase
 {
     protected override void OnUpdate()
     {
+        return;
         var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSingleton.CreateCommandBuffer(EntityManager.WorldUnmanaged);
         var actionLookup = SystemAPI.GetComponentLookup<ActionComponent>(true);

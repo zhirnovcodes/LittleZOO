@@ -31,6 +31,7 @@ public partial struct SpawnGrassSystem : ISystem
         }
 
         commandBuffer.Playback(state.EntityManager);
+        commandBuffer.Dispose();
     }
 
     private void SpawnGrass(float3 centerPosition, float planetScale, EntityCommandBuffer commandBuffer, RefRW<ActorsSpawnRandomComponent> random, RefRO<ActorsSpawnComponent> spawnData)
@@ -44,9 +45,16 @@ public partial struct SpawnGrassSystem : ISystem
         var wholeness = random.ValueRW.Random.NextFloat(spawnData.ValueRO.GrassWholenessMin, spawnData.ValueRO.GrassWholenessMax);
         var wholenessFactor = math.unlerp(0, spawnData.ValueRO.GrassWholenessMax, wholeness);
         var radius = math.lerp(0, spawnData.ValueRO.GrassRadiusMax, wholenessFactor);
+        var nutrition = random.ValueRW.Random.NextFloat(spawnData.ValueRO.GrassNutritionMin, spawnData.ValueRO.GrassNutritionMax);
 
         commandBuffer.SetComponent(grass, new LocalTransform { Position = newPosition, Rotation = newRotation, Scale = radius });
         commandBuffer.AddComponent(grass, new ActorRandomComponent { Random = Unity.Mathematics.Random.CreateFromIndex(random.ValueRW.Random.NextUInt()) });
+        commandBuffer.AddComponent(grass, new EdibleComponent
+        {
+            Wholeness = 100,
+            Nutrition = nutrition,
+            RadiusMax = radius
+        });
 
         commandBuffer.AddComponent(grass, new GrassComponent
         {

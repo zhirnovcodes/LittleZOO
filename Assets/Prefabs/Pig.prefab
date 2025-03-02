@@ -753,4 +753,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   HungerTuningFactor: 1
-  HungerDecayFactor: 5
+  HungerDecayFactor: 0.2

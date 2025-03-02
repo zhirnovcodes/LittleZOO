@@ -15,7 +15,7 @@ public  static class StatesExtentions
     private static void SetAllDisabled(Entity entity, EntityCommandBuffer commandBuffer)
     {
         SetComponentDisabled<IdleStateTag>(entity, commandBuffer);
-        SetComponentDisabled<WalkingStateTag>(entity, commandBuffer);
+        SetComponentDisabled<SearchingStateTag>(entity, commandBuffer);
         SetComponentDisabled<RunningStateTag>(entity, commandBuffer);
         SetComponentDisabled<SleepingStateTag>(entity, commandBuffer);
         SetComponentDisabled<DyingStateTag>(entity, commandBuffer);
@@ -26,7 +26,7 @@ public  static class StatesExtentions
     private static void SetAllDisabled(Entity entity, EntityCommandBuffer.ParallelWriter commandBuffer, int sortKey)
     {
         SetComponentDisabled<IdleStateTag>(entity, commandBuffer, sortKey);
-        SetComponentDisabled<WalkingStateTag>(entity, commandBuffer, sortKey);
+        SetComponentDisabled<SearchingStateTag>(entity, commandBuffer, sortKey);
         SetComponentDisabled<RunningStateTag>(entity, commandBuffer, sortKey);
         SetComponentDisabled<SleepingStateTag>(entity, commandBuffer, sortKey);
         SetComponentDisabled<DyingStateTag>(entity, commandBuffer, sortKey);

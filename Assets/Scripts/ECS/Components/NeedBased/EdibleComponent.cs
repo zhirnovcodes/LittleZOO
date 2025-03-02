@@ -4,4 +4,5 @@ public struct EdibleComponent : IComponentData
 {
     public float Wholeness;
     public float Nutrition;
+    public float RadiusMax;
 }

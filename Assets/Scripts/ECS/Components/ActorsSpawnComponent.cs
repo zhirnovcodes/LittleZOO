@@ -15,6 +15,8 @@ public struct ActorsSpawnComponent : IComponentData
     public int GrassCount;
     public float GrassRadiusMax;
     public float GrassWholenessMin; 
-    public float GrassWholenessMax; 
+    public float GrassWholenessMax;
+    public float GrassNutritionMin;
+    public float GrassNutritionMax;
 
 }
