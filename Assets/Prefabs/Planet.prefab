@@ -108,8 +108,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c4c8ddab81058c34d8733ac9d86e3e6e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Planet: {fileID: 0}
-  TesselationLevel: 1
+  TesselationLevel: 5
 --- !u!1 &7463803167856836624
 GameObject:
   m_ObjectHideFlags: 0

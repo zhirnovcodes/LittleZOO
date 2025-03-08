@@ -19,4 +19,6 @@ public struct ActorsSpawnComponent : IComponentData
     public float GrassNutritionMin;
     public float GrassNutritionMax;
 
+    //-----------TEST
+    public Entity IcoTest;
 }

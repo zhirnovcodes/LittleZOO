@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -32,9 +32,10 @@ public class IcosphereAuthoring : MonoBehaviour
             BlobBuilder builder = new BlobBuilder(Allocator.Temp);
             ref IcosphereMapBlob blob = ref builder.ConstructRoot<IcosphereMapBlob>();
 
-            // Create initial icosahedron (20 equilateral triangles)
             NativeList<Triangle> triangles = new NativeList<Triangle>(Allocator.Temp);
             CreateInitialIcosahedron(ref triangles, radius);
+            //CreateInitialThetrahedron(ref triangles, radius);
+
             NativeList<Triangle> tesellatedTriangles = new NativeList<Triangle>(Allocator.Temp);
 
             // Apply tesselation based on the desired level
@@ -112,8 +113,7 @@ public class IcosphereAuthoring : MonoBehaviour
             // Golden ratio for icosahedron construction
             float t = (1f + math.sqrt(5f)) / 2f;
 
-            // Normalized vertices of an icosahedron
-            NativeList<float3> vertices = new NativeList<float3>(Allocator.Temp)
+            var vertices = new NativeList<float3>(12, Allocator.Temp)
             {
                 math.normalize(new float3(-1f, t, 0f)) * radius,
                 math.normalize(new float3(1f, t, 0f)) * radius,
@@ -131,18 +131,16 @@ public class IcosphereAuthoring : MonoBehaviour
                 math.normalize(new float3(-t, 0f, 1f)) * radius
             };
 
-            // Define the 20 triangles of an icosahedron
+            // Create the triangle list
             int[,] triangleIndices = new int[,]
             {
-            {0, 11, 5}, {0, 5, 1}, {0, 1, 7}, {0, 7, 10}, {0, 10, 11},
-            {1, 5, 9}, {5, 11, 4}, {11, 10, 2}, {10, 7, 6}, {7, 1, 8},
-            {3, 9, 4}, {3, 4, 2}, {3, 2, 6}, {3, 6, 8}, {3, 8, 9},
-            {4, 9, 5}, {2, 4, 11}, {6, 2, 10}, {8, 6, 7}, {9, 8, 1}
+                {0, 11, 5}, {0, 5, 1}, {0, 1, 7}, {0, 7, 10}, {0, 10, 11},
+                {1, 5, 9}, {5, 11, 4}, {11, 10, 2}, {10, 7, 6}, {7, 1, 8},
+                {3, 9, 4}, {3, 4, 2}, {3, 2, 6}, {3, 6, 8}, {3, 8, 9},
+                {4, 9, 5}, {2, 4, 11}, {6, 2, 10}, {8, 6, 7}, {9, 8, 1}
             };
 
-            // Create the triangle list
-
-            for (int i = 0; i < 20; i++)
+            for (int i = 0; i < triangleIndices.GetLength(0); i++)
             {
                 Triangle tri = new Triangle
                 {
@@ -155,6 +153,45 @@ public class IcosphereAuthoring : MonoBehaviour
             }
 
             vertices.Dispose();
+        }
+
+        private void CreateInitialThetrahedron(ref NativeList<Triangle> output, float radius)
+        {
+            var vertices = new NativeList<float3>(4, Allocator.Temp);
+
+            vertices.Add(new float3(0f, radius, 0f));
+
+            // Base vertices
+            vertices.Add(new float3((2f * math.sqrt(2f) / 3f) * radius, -radius / 3f, 0f));
+            vertices.Add(new float3((-math.sqrt(2f) / 3f) * radius, -radius / 3f, (math.sqrt(6f) / 3f) * radius));
+            vertices.Add(new float3((-math.sqrt(2f) / 3f) * radius, -radius / 3f, (-math.sqrt(6f) / 3f) * radius));
+
+            int[,] triangleIndices = new int[4, 3]
+            {
+                    // Face 1: Apex, Vertex 2, Vertex 3
+                    { 0, 1, 2 },
+                    // Face 2: Apex, Vertex 2, Vertex 4
+                    { 0, 1, 3 },
+                    // Face 3: Apex, Vertex 3, Vertex 4
+                    { 0, 2, 3 },
+                    // Face 4: Vertex 2, Vertex 3, Vertex 4
+                    { 1, 2, 3 }
+            };
+
+            for (int i = 0; i < triangleIndices.GetLength(0); i++)
+            {
+                Triangle tri = new Triangle
+                {
+                    V1 = vertices[triangleIndices[i, 0]],
+                    V2 = vertices[triangleIndices[i, 1]],
+                    V3 = vertices[triangleIndices[i, 2]],
+                    TriangleIndex = i
+                };
+                output.Add(tri);
+            }
+
+            vertices.Dispose();
+
         }
 
         private void TesselateTriangles(ref NativeList<Triangle> tesellatedOutput, NativeList<Triangle> triangles, float radius)
@@ -194,12 +231,9 @@ public class IcosphereAuthoring : MonoBehaviour
         private float CalculateOuterRadius(float3 v1, float3 v2, float3 v3)
         {
             // Calculate the radius of the circumscribed circle
-            float a = math.length(v2 - v3);
-            float b = math.length(v1 - v3);
-            float c = math.length(v1 - v2);
-            float s = (a + b + c) / 2f; // Semi-perimeter
+            var mid = (v1 + v2 + v3) / 3f;
 
-            return (a * b * c) / (4f * math.sqrt(s * (s - a) * (s - b) * (s - c)));
+            return math.length(v1 - mid);
         }
 
         private int FindNeighborIndex(ref NativeList<Triangle> triangles, Triangle triangle, int edgeIndex)
@@ -340,12 +374,12 @@ public static partial class IcosphereMapExtensions
         }
 
         // Calculate the up direction (from centroid to surface)
-        float3 up = triangle.CentroidOnSurface - triangle.Centroid;
+        float3 up = triangle.Centroid;
 
         // Create a rotation that aligns with these directions
         return quaternion.LookRotation(math.normalize(forward), math.normalize(up));
     }
-
+    /*
     public partial struct TestIcoSystem : ISystem
     {
         public void OnCreate(ref SystemState state)
@@ -366,17 +400,26 @@ public static partial class IcosphereMapExtensions
             for (int i = 0; i < ico.Length(); i++)
             {
                 var triangle = ico.GetTriangle(i);
-                var pos = triangle.CentroidOnSurface;
-                var scale = triangle.RadiusInner * 2;
-                var rotation = ico.GetRotation(i);
+                var scale = 1;
 
+                var newGrass1 = commandBuffer.Instantiate(spawnData.ValueRO.IcoTest);
+                commandBuffer.SetComponent(newGrass1, new LocalTransform { Position = triangle.V1, Rotation = quaternion.identity, Scale = scale });
+                var newGrass2 = commandBuffer.Instantiate(spawnData.ValueRO.IcoTest);
+                commandBuffer.SetComponent(newGrass2, new LocalTransform { Position = triangle.V2, Rotation = quaternion.identity, Scale = scale });
+                var newGrass3 = commandBuffer.Instantiate(spawnData.ValueRO.IcoTest);
+                commandBuffer.SetComponent(newGrass3, new LocalTransform { Position = triangle.V3, Rotation = quaternion.identity, Scale = scale });
+ 
+                var pos = triangle.CentroidOnSurface;
+                var rotation = ico.GetRotation(i);
+                var scaleGrass = triangle.RadiusOuter * 2;
                 var newGrass = commandBuffer.Instantiate(spawnData.ValueRO.GrassPrefab);
-                commandBuffer.SetComponent(newGrass, new LocalTransform { Position = pos, Rotation = rotation, Scale = scale });
+                commandBuffer.SetComponent(newGrass, new LocalTransform { Position = pos, Rotation = rotation, Scale = scaleGrass });
 
             }
+
 
             commandBuffer.Playback(state.EntityManager);
             commandBuffer.Dispose();
         }
-    }
+    }*/
 }

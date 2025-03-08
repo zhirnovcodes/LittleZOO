@@ -20,6 +20,8 @@ public class ActorsSpawnAuthoring : MonoBehaviour
     public float GrassNutritionMin = 10;
     public float GrassNutritionMax = 20;
 
+    public GameObject IcoTest;
+
     public class ActorsSpawnBaker : Baker<ActorsSpawnAuthoring>
     {
         public override void Bake(ActorsSpawnAuthoring authoring)
@@ -40,7 +42,9 @@ public class ActorsSpawnAuthoring : MonoBehaviour
                 GrassWholenessMin = authoring.GrassWholenessMin,
                 GrassWholenessMax = authoring.GrassWholenessMax,
                 GrassNutritionMin = authoring.GrassNutritionMin,
-                GrassNutritionMax = authoring.GrassNutritionMax
+                GrassNutritionMax = authoring.GrassNutritionMax,
+
+                IcoTest = GetEntity(authoring.IcoTest, TransformUsageFlags.Dynamic)
             });
 
             AddComponent(entity, new ActorsSpawnRandomComponent

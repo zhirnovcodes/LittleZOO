@@ -25,6 +25,7 @@ public partial struct SpawnPigsSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         state.Enabled = false;
+        return;
 
         var entity = SystemAPI.GetSingletonEntity<ActorsSpawnComponent>();
         var spawnData = SystemAPI.GetComponentRO<ActorsSpawnComponent>(entity);
