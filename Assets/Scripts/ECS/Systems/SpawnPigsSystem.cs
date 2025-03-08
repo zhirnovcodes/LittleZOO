@@ -57,38 +57,17 @@ public partial struct SpawnPigsSystem : ISystem
         commandBuffer.AddComponent(newPig, new GravityComponent ());
         commandBuffer.AddComponent(newPig, new ActorRandomComponent { Random = Unity.Mathematics.Random.CreateFromIndex(random.ValueRW.Random.NextUInt()) });
 
-        // States
-        //commandBuffer.AddComponent(newPig, new FallingStateTag());
         commandBuffer.AddComponent(newPig, new MoveToTargetInputComponent { Speed = spawnData.ValueRO.PigSpeed });
         commandBuffer.AddComponent(newPig, new MoveToTargetOutputComponent());
         commandBuffer.AddComponent(newPig, new HungerComponent());
-        //commandBuffer.AddComponent(newPig, new DecisionMakingComponent
-        //{
-        //    CreatedActions = new NativeList<ActionComponent>(Allocator.Persistent)
-        //});
-
-        //commandBuffer.SetComponentEnabled<FallingStateTag>(newPig, true);
-        //commandBuffer.SetComponentEnabled<MoveToTargetInputComponent>(newPig, false);
-
-        // Action chain
-        //commandBuffer.AddBuffer<ActionChainItem>(newPig);
-        //commandBuffer.AddBuffer<DeleteActionItem>(newPig);
-
-        // Adding search action
-        var searchAction = commandBuffer.CreateEntity();
-        commandBuffer.AddComponent(searchAction, new ActionComponent
-        {
-            ActionId = Zoo.Enums.ActionID.Search,
-            Target = Entity.Null,
-            ActionState = Zoo.Enums.ActionStates.Created,
-            Actor = newPig
-        });
-
-        commandBuffer.AddComponent(searchAction, new SearchActionComponent { });
-
-        commandBuffer.AddComponent(newPig, new SearchingStateTag { Action = searchAction });
+        
+        // States
+        commandBuffer.AddComponent(newPig, new SearchingStateTag());
         commandBuffer.AddComponent(newPig, new EatingStateTag());
         commandBuffer.SetComponentEnabled<EatingStateTag>(newPig, false);
+
+        commandBuffer.AddComponent(newPig, new NeedBasedSystemOutput());
+        commandBuffer.AddBuffer<AdvertisedActionItem>(newPig);
     }
 
     private quaternion GetRandomRotation(RefRW<ActorsSpawnRandomComponent> random, RefRO<ActorsSpawnComponent> spawnData, float3 spawnPosit) 

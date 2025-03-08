@@ -12,7 +12,6 @@ public partial struct SearchingActionSystem : ISystem
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        state.RequireForUpdate<SearchActionComponent>();
         state.RequireForUpdate<PlanetComponent>();
     }
 
@@ -84,36 +83,16 @@ public partial struct SearchingActionSystem : ISystem
 
             if (needs.Fullness >= 90f)
             {
-                //return;
+                Ecb.SetComponentEnabled<EatingStateTag>(entity, true);
+                Ecb.SetComponentEnabled<SearchingStateTag>(entity, false);
+                return;
             }
 
             // Check if has hunger target
             if (hunger.Target != Entity.Null)
             {
-                // Create new eating action
-                var eatingActionComponent = new EatingActionComponent();
-                var newActionComponent = new ActionComponent
-                {
-                    ActionId = ActionID.Eat,
-                    ActionState = ActionStates.Created,
-                    Actor = entity,
-                    Target = hunger.Target
-                };
-
-                var newEntity = Ecb.CreateEntity();
-                Ecb.AddComponent(newEntity, eatingActionComponent);
-                Ecb.AddComponent(newEntity, newActionComponent);
-
-                Ecb.SetComponent(entity, new EatingStateTag 
-                {
-                    Action = newEntity,
-                    Target = hunger.Target
-                });
-
                 Ecb.SetComponentEnabled<EatingStateTag>(entity, true);
                 Ecb.SetComponentEnabled<SearchingStateTag>(entity, false);
-
-                Ecb.DestroyEntity(tag.Action);
             }
         }
     }

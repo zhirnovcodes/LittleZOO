@@ -2,11 +2,6 @@ using Unity.Entities;
 
 public static class ActionsExtentions
 {
-    public static void AddActionToBuffer<A>() where A : IActionComponent
-    {
-
-    }
-
     /*
 
     private static void SetActionDisabled<T>(Entity entity, EntityCommandBuffer commandBuffer) where T : struct, IActionComponent

@@ -13,6 +13,7 @@ public partial struct SpawnGrassSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         state.Enabled = false;
+        return;
 
         var entity = SystemAPI.GetSingletonEntity<ActorsSpawnComponent>();
         var spawnData = SystemAPI.GetComponentRO<ActorsSpawnComponent>(entity);
@@ -58,9 +59,21 @@ public partial struct SpawnGrassSystem : ISystem
 
         commandBuffer.AddComponent(grass, new GrassComponent
         {
-            Wholeness = wholeness,
-            RadiusMax = radius,
-            WholenessMax = wholeness
+        });
+
+
+        commandBuffer.AddBuffer<AdvertisedActionItem>(grass);
+        commandBuffer.AppendToBuffer(grass, new AdvertisedActionItem
+        {
+            ActionId = Zoo.Enums.ActionID.Eat,
+            NeedId = Zoo.Enums.NeedType.Fullness,
+            NeedsMatrix = new float2(1, -0.5f)
+        });
+        commandBuffer.AppendToBuffer(grass, new AdvertisedActionItem
+        {
+            ActionId = Zoo.Enums.ActionID.Sleep,
+            NeedId = Zoo.Enums.NeedType.Energy,
+            NeedsMatrix = new float2(-0.2f, 0.5f)
         });
     }
 

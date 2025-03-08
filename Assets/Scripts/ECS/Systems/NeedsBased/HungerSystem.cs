@@ -38,6 +38,7 @@ public partial struct HungerSystem : ISystem
 
             if (needs.ValueRW.Fullness <= 0)
             {
+                // Die from hunger
                 ecb.DestroyEntity(entity);
                 continue;
             }
@@ -112,27 +113,10 @@ public partial struct HungerSystem : ISystem
 
         // Component lookup to get positions of entities
         [ReadOnly] public ComponentLookup<LocalTransform> TransformLookup;
-
-        // Cache the reference position to avoid repeated lookups
-        private float3 _referencePosition;
-        private bool _referencePositionInitialized;
-
+        
         public int Compare(Entity x, Entity y)
         {
-            // Lazily initialize the reference position if not already done
-            if (!_referencePositionInitialized)
-            {
-                if (TransformLookup.HasComponent(ReferenceEntity))
-                {
-                    _referencePosition = TransformLookup[ReferenceEntity].Position;
-                }
-                else
-                {
-                    // Fallback if reference entity doesn't have a transform
-                    _referencePosition = float3.zero;
-                }
-                _referencePositionInitialized = true;
-            }
+            var referencePosition = TransformLookup[ReferenceEntity].Position;
 
             // Get positions of entities to compare
             float3 positionX = TransformLookup.HasComponent(x)
@@ -144,8 +128,8 @@ public partial struct HungerSystem : ISystem
                 : float3.zero;
 
             // Calculate squared distances (more efficient than calculating actual distances)
-            float distanceXSquared = math.distancesq(_referencePosition, positionX);
-            float distanceYSquared = math.distancesq(_referencePosition, positionY);
+            float distanceXSquared = math.distancesq(referencePosition, positionX);
+            float distanceYSquared = math.distancesq(referencePosition, positionY);
 
             // Compare the distances
             if (distanceXSquared < distanceYSquared)
