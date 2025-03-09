@@ -166,6 +166,9 @@ MonoBehaviour:
   GrassRadiusMax: 5
   GrassWholenessMin: 10
   GrassWholenessMax: 100
+  GrassNutritionMin: 10
+  GrassNutritionMax: 20
+  IcoTest: {fileID: 142410625112114657, guid: 3de450afeb184f347b07c7132d5a35c9, type: 3}
 --- !u!4 &806225738
 Transform:
   m_ObjectHideFlags: 0
