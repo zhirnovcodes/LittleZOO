@@ -24,7 +24,7 @@ public partial struct NeedBasedDecisionSystem : ISystem
 
         var job = new NeedBasedDecisionJob
         {
-            ECB = parallelEcb,
+            Ecb = parallelEcb,
             AdvertisedActionLookup = advertisedActionLookup
         };
 
@@ -47,7 +47,7 @@ public partial struct NeedBasedDecisionSystem : ISystem
     partial struct NeedBasedDecisionJob : IJobEntity
     {
         [ReadOnly] public BufferLookup<AdvertisedActionItem> AdvertisedActionLookup;
-        public EntityCommandBuffer.ParallelWriter ECB;
+        public EntityCommandBuffer.ParallelWriter Ecb;
 
         void Execute(
             [EntityIndexInQuery] int sortKey,
@@ -88,7 +88,7 @@ public partial struct NeedBasedDecisionSystem : ISystem
 
             if (bestAdvertiser != Entity.Null)
             {
-                ECB.SetComponent(sortKey, entity, new NeedBasedSystemOutput
+                Ecb.SetComponent(sortKey, entity, new NeedBasedSystemOutput
                 {
                     Action = bestAction,
                     Advertiser = bestAdvertiser

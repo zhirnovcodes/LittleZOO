@@ -7,7 +7,7 @@ using Zoo.Physics;
 
 [BurstCompile]
 [UpdateInGroup(typeof(InitializationSystemGroup))]
-public partial struct SpawnPigsSystem : ISystem
+public partial struct PigsSpawnSystem : ISystem
 {
     [BurstCompile]
     public void OnCreate(ref SystemState state)
@@ -26,7 +26,6 @@ public partial struct SpawnPigsSystem : ISystem
     {
         state.Enabled = false;
         return;
-
         var entity = SystemAPI.GetSingletonEntity<ActorsSpawnComponent>();
         var spawnData = SystemAPI.GetComponentRO<ActorsSpawnComponent>(entity);
         var randomData = SystemAPI.GetComponentRW<ActorsSpawnRandomComponent>(entity);

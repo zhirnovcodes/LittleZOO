@@ -133,23 +133,16 @@ public partial struct EatingActionSystem : ISystem
         private void Bite(ref ActorNeedsComponent needs, Entity target)
         {
             var edibleComponent = EdibleLookup.GetRefRW(target);
-            var edibleTransform = TransformLookup.GetRefRW(target);
 
             var oldWholeness = edibleComponent.ValueRO.Wholeness;
             var biteValue = math.min(biteWholeness, oldWholeness);
-            var newWholeness = oldWholeness - biteValue;
 
             var nutritiousAll = edibleComponent.ValueRO.Nutrition;
 
             var nutritiousValue = biteValue * nutritiousAll / 100f;
 
-            var radiusFactor = newWholeness / 100f;
-            var newRadius = edibleComponent.ValueRO.RadiusMax * radiusFactor;
-
             needs.Fullness = math.min(100, needs.Fullness + nutritiousValue);
-            edibleComponent.ValueRW.Wholeness = newWholeness;
-
-            edibleTransform.ValueRW.Scale = newRadius;
+            edibleComponent.ValueRW.BitenPart += biteValue;
         }
 
         private void SetSearchingState(Entity entity)

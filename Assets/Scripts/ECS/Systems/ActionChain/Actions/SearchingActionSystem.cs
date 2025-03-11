@@ -71,6 +71,7 @@ public partial struct SearchingActionSystem : ISystem
             in MoveToTargetOutputComponent moveOutput,
             in HungerComponent hunger,
             in ActorNeedsComponent needs,
+            in NeedBasedSystemOutput needsOutput,
             in SearchingStateTag tag
         )
         {
@@ -81,19 +82,32 @@ public partial struct SearchingActionSystem : ISystem
                 moveInput.Speed = WalkingSpeed;
             }
 
+            // TODO Blob + DNA + Hunger
             if (needs.Fullness >= 90f)
             {
-                Ecb.SetComponentEnabled<EatingStateTag>(entity, true);
-                Ecb.SetComponentEnabled<SearchingStateTag>(entity, false);
                 return;
             }
 
+            if (needsOutput.Advertiser != Entity.Null)
+            {
+                switch (needsOutput.Action)
+                {
+                    case ActionID.Eat:
+                        Ecb.SetComponentEnabled<EatingStateTag>(entity, true);
+                        break;
+                    case ActionID.Sleep:
+                        break;
+                }
+                Ecb.SetComponentEnabled<SearchingStateTag>(entity, false);
+            }
+
+            /*
             // Check if has hunger target
             if (hunger.Target != Entity.Null)
             {
                 Ecb.SetComponentEnabled<EatingStateTag>(entity, true);
                 Ecb.SetComponentEnabled<SearchingStateTag>(entity, false);
-            }
+            }*/
         }
     }
 
