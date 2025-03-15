@@ -81,7 +81,6 @@ public partial struct PlantReproductionSystem : ISystem
                     // If we found a spot, create a new plant
                     if (triangleIsEmpty)
                     {
-                        UnityEngine.Debug.Log("2");
                         // Create the new grass entity with attributes based on the parent DNA
                         GrassFactory.CreateGrass(
                             ecb,

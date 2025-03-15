@@ -38,13 +38,23 @@ public  static class StatesExtentions
     {
         SetAllDisabled(entity, commandBuffer);
         commandBuffer.SetComponentEnabled<T>(entity, true);
+        ResetStateTimer(entity, commandBuffer);
     }
 
     public static void SetState<T>(Entity entity, EntityCommandBuffer.ParallelWriter commandBuffer, int sortKey) where T : struct, IStateTag, IEnableableComponent
     {
         SetAllDisabled(entity, commandBuffer, sortKey);
         commandBuffer.SetComponentEnabled<T>(sortKey, entity, true);
+        ResetStateTimer(entity, commandBuffer, sortKey);
     }
 
+    private static void ResetStateTimer(Entity entity, EntityCommandBuffer commandBuffer)
+    {
+        commandBuffer.SetComponent(entity, new StateTimeComponent());
+    }
 
+    private static void ResetStateTimer(Entity entity, EntityCommandBuffer.ParallelWriter commandBuffer, int sortKey)
+    {
+        commandBuffer.SetComponent(sortKey, entity, new StateTimeComponent());
+    }
 }

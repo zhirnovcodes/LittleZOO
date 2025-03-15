@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2417a82d616fc7e4fa3d8fd221ed1afa, type: 3}
+  m_Name: SimulationConfig
+  m_EditorClassIdentifier: 
+  HungerDecayFactor: {x: 0.01, y: 0.05}
+  EnergyDecayFactor: {x: 0.01, y: 0.06}
+  PigsCount: {x: 10, y: 20}
+  PigsSpawnHeight: {x: 0.5, y: 1.5}
+  GrassCount: {x: 50, y: 100}
+  GrassSpawnHeight: {x: 0, y: 0.5}
+  PlanetRadius: 50
+  HorizontalDrag: 0.8
+  GravityForce: 9.81
+  eatInterval: {x: 5, y: 10}
+  biteWholeness: {x: 0.1, y: 0.3}
+  searchMinValuableFullness: {x: 0.3, y: 0.6}
+  minValuableEnergy: {x: 5, y: 10}
+  grassFullnessWholeness: {x: 0.5, y: 1}
+  grassNutrition: {x: 10, y: 30}
+  grassSizeMax: {x: 0.5, y: 1.5}
+  energyComfortFactor: {x: 1, y: 2}
+  foodPreference: 1
+  pigSpeed: {x: 1, y: 3}
+  pigSize: {x: 0.8, y: 1.2}
+  visionInterval: {x: 0.2, y: 0.5}
+  visionRadius: {x: 5, y: 10}
+  grassSize: {x: 0.2, y: 0.5}
+  grassWholeness: {x: 0.8, y: 1}
+  grassStatNutrition: {x: 5, y: 15}
+  PigSleepingTime: 1
+  PigDyingTime: 1

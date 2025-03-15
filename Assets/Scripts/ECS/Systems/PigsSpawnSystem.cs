@@ -13,6 +13,7 @@ public partial struct PigsSpawnSystem : ISystem
     public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<ActorsSpawnComponent>();
+        state.RequireForUpdate<SimulationConfigComponent>();
         state.RequireForUpdate<PlanetComponent>();
     }
 
@@ -25,8 +26,9 @@ public partial struct PigsSpawnSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         state.Enabled = false;
-        return;
+        
         var entity = SystemAPI.GetSingletonEntity<ActorsSpawnComponent>();
+        var config = SystemAPI.GetSingleton<SimulationConfigComponent>();
         var spawnData = SystemAPI.GetComponentRO<ActorsSpawnComponent>(entity);
         var randomData = SystemAPI.GetComponentRW<ActorsSpawnRandomComponent>(entity);
 
@@ -39,35 +41,13 @@ public partial struct PigsSpawnSystem : ISystem
 
         for (int i = 0; i < spawnData.ValueRO.PigsCount; i++)
         {
-            SpawnPig(planetCenter, planetScale, commandBuffer, randomData, spawnData);
+            var newPosition = GetRandomPosition(planetCenter, planetScale, 1, randomData, spawnData);
+            var newRotation = GetRandomRotation(randomData, spawnData, newPosition);
+
+            PigsFactory.SpawnPig(newPosition, newRotation, commandBuffer, randomData, ref config.BlobReference.Value);
         }
 
         commandBuffer.Playback(state.EntityManager);
-    }
-
-    private void SpawnPig(float3 centerPosition, float planetScale, EntityCommandBuffer commandBuffer, RefRW<ActorsSpawnRandomComponent> random, RefRO<ActorsSpawnComponent> spawnData)
-    {
-        var newPig = commandBuffer.Instantiate(spawnData.ValueRO.PigPrefab);
-
-        var newScale = 1f;
-        var newPosition = GetRandomPosition(centerPosition, planetScale, newScale, random, spawnData);
-        var newRotation = GetRandomRotation(random, spawnData, newPosition);
-
-        commandBuffer.SetComponent(newPig, new LocalTransform { Position = newPosition, Rotation = newRotation, Scale = 1 });
-        commandBuffer.AddComponent(newPig, new GravityComponent ());
-        commandBuffer.AddComponent(newPig, new ActorRandomComponent { Random = Unity.Mathematics.Random.CreateFromIndex(random.ValueRW.Random.NextUInt()) });
-
-        commandBuffer.AddComponent(newPig, new MoveToTargetInputComponent { Speed = spawnData.ValueRO.PigSpeed });
-        commandBuffer.AddComponent(newPig, new MoveToTargetOutputComponent());
-        commandBuffer.AddComponent(newPig, new HungerComponent());
-        
-        // States
-        commandBuffer.AddComponent(newPig, new SearchingStateTag());
-        commandBuffer.AddComponent(newPig, new EatingStateTag());
-        commandBuffer.SetComponentEnabled<EatingStateTag>(newPig, false);
-
-        commandBuffer.AddComponent(newPig, new NeedBasedSystemOutput());
-        commandBuffer.AddBuffer<AdvertisedActionItem>(newPig);
     }
 
     private quaternion GetRandomRotation(RefRW<ActorsSpawnRandomComponent> random, RefRO<ActorsSpawnComponent> spawnData, float3 spawnPosit) 

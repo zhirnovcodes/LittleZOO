@@ -50,34 +50,31 @@ public partial class IcosphereCreateSystem : SystemBase
             .WithNone<IcosphereComponent>()
             .Build();
 
-        if (!query.IsEmpty)
-        {
-            var ecb = new EntityCommandBuffer(Allocator.Temp);
-
-            foreach (var (definition, entity) in SystemAPI.Query<IcosphereDefinition>().WithEntityAccess())
-            {
-                // Create the blob asset
-                BlobAssetReference<IcosphereMapBlob> blobAsset = CreateIcosphereBlob(definition.Radius, definition.TesselationLevel);
-
-                // Add the component to the entity
-                ecb.AddComponent(entity, new IcosphereComponent
-                {
-                    BlobRef = blobAsset
-                });
-
-                // Remove the definition component as it's no longer needed
-                ecb.RemoveComponent<IcosphereDefinition>(entity);
-            }
-
-            ecb.Playback(EntityManager);
-            ecb.Dispose();
-        }
-
-        // Disable the system once all icospheres are created
         if (query.IsEmpty)
         {
             Enabled = false;
+            return;
         }
+
+        var ecb = new EntityCommandBuffer(Allocator.Temp);
+
+        foreach (var (definition, entity) in SystemAPI.Query<IcosphereDefinition>().WithEntityAccess())
+        {
+            // Create the blob asset
+            BlobAssetReference<IcosphereMapBlob> blobAsset = CreateIcosphereBlob(definition.Radius, definition.TesselationLevel);
+
+            // Add the component to the entity
+            ecb.AddComponent(entity, new IcosphereComponent
+            {
+                BlobRef = blobAsset
+            });
+
+            // Remove the definition component as it's no longer needed
+            ecb.RemoveComponent<IcosphereDefinition>(entity);
+        }
+
+        ecb.Playback(EntityManager);
+        ecb.Dispose();
     }
 
     private BlobAssetReference<IcosphereMapBlob> CreateIcosphereBlob(float radius, int tesselationLevel)

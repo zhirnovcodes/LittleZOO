@@ -19,7 +19,7 @@ public class ActorNeedAuthoring : MonoBehaviour
                 HungerTuningFactor = authoring.HungerTuningFactor,
                 EnergyTuningFactor = 1,
                 HungerDecayFactor = authoring.HungerDecayFactor,
-                EnergyDecayFactor = 1
+                EnergyDecayFactor = 0.5f
             });
         }
     }

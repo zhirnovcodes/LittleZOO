@@ -24,6 +24,7 @@ public partial struct SearchingActionSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         var ecb = new EntityCommandBuffer(Allocator.TempJob);
+        var deltaTime = SystemAPI.Time.DeltaTime;
 
         // Get the planet info
         var planetEntity = SystemAPI.GetSingletonEntity<PlanetComponent>();
@@ -36,13 +37,17 @@ public partial struct SearchingActionSystem : ISystem
         var spawnData = SystemAPI.GetComponentRO<ActorsSpawnComponent>(spawnEntity);
         var walkingSpeed = spawnData.ValueRO.PigSpeed;
 
+        var referenceLookup = SystemAPI.GetBufferLookup<Child>();
+
         // Second job - process selected entities
         state.Dependency = new SearchActionJob
         {
             Ecb = ecb,
             PlanetCenter = planetCenter,
             PlanetScale = planetScale,
-            WalkingSpeed = walkingSpeed
+            WalkingSpeed = walkingSpeed,
+            ReferenceLookup = referenceLookup,
+            DeltaTime = deltaTime
         }.Schedule(state.Dependency);
 
         state.Dependency.Complete();
@@ -57,9 +62,12 @@ public partial struct SearchingActionSystem : ISystem
     {
         public EntityCommandBuffer Ecb;
 
+        public BufferLookup<Child> ReferenceLookup;
+
         public float3 PlanetCenter;
         public float PlanetScale;
         public float WalkingSpeed;
+        public float DeltaTime;
 
         // Process entities that have either MoveToTargetOutputComponent or HungerComponent
         // We use SystemAPI to get components as needed
@@ -68,9 +76,8 @@ public partial struct SearchingActionSystem : ISystem
             Entity entity,
             ref MoveToTargetInputComponent moveInput,
             ref ActorRandomComponent randomComponent,
+            ref ActorNeedsComponent needs,
             in MoveToTargetOutputComponent moveOutput,
-            in HungerComponent hunger,
-            in ActorNeedsComponent needs,
             in NeedBasedSystemOutput needsOutput,
             in SearchingStateTag tag
         )
@@ -80,34 +87,37 @@ public partial struct SearchingActionSystem : ISystem
             {
                 moveInput.TargetPosition = GenerateTargetPosition(ref randomComponent, PlanetCenter, PlanetScale);
                 moveInput.Speed = WalkingSpeed;
+
             }
 
-            // TODO Blob + DNA + Hunger
-            if (needs.Fullness >= 90f)
+            needs.Energy -= DeltaTime * needs.EnergyDecayFactor;
+            needs.Fullness -= DeltaTime * needs.HungerDecayFactor;
+
+            if (needs.Fullness <= 0)
+            {
+                UnityEngine.Debug.Log("Die");
+                Ecb.DestroyEntity(entity);
+                return;
+            }
+
+            if (needsOutput.Advertiser == Entity.Null)
             {
                 return;
             }
 
-            if (needsOutput.Advertiser != Entity.Null)
+            switch (needsOutput.Action)
             {
-                switch (needsOutput.Action)
-                {
-                    case ActionID.Eat:
-                        Ecb.SetComponentEnabled<EatingStateTag>(entity, true);
-                        break;
-                    case ActionID.Sleep:
-                        break;
-                }
-                Ecb.SetComponentEnabled<SearchingStateTag>(entity, false);
+                case ActionID.Eat:
+                    Ecb.SetComponentEnabled<EatingStateTag>(entity, true);
+                    Ecb.SetIdleAnimation(ReferenceLookup.GetView(entity));
+                    break;
+                case ActionID.Sleep:
+                    Ecb.SetComponentEnabled<SleepingStateTag>(entity, true);
+                    Ecb.SetIdleAnimation(ReferenceLookup.GetView(entity));
+                    break;
             }
 
-            /*
-            // Check if has hunger target
-            if (hunger.Target != Entity.Null)
-            {
-                Ecb.SetComponentEnabled<EatingStateTag>(entity, true);
-                Ecb.SetComponentEnabled<SearchingStateTag>(entity, false);
-            }*/
+            Ecb.SetComponentEnabled<SearchingStateTag>(entity, false);
         }
     }
 

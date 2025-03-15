@@ -86,14 +86,21 @@ public partial struct NeedBasedDecisionSystem : ISystem
                 }
             }
 
-            if (bestAdvertiser != Entity.Null)
+            if (bestAdvertiser == Entity.Null)
             {
                 Ecb.SetComponent(sortKey, entity, new NeedBasedSystemOutput
                 {
-                    Action = bestAction,
-                    Advertiser = bestAdvertiser
+                    Action = ActionID.Search,
+                    Advertiser = Entity.Null
                 });
+                return;
             }
+
+            Ecb.SetComponent(sortKey, entity, new NeedBasedSystemOutput
+            {
+                Action = bestAction,
+                Advertiser = bestAdvertiser
+            });
         }
 
         (float Sum, bool Valid) CalculateActionEffect(
@@ -118,21 +125,19 @@ public partial struct NeedBasedDecisionSystem : ISystem
             float duration = needed / perSecond;
 
             // Calculate final values with natural decrease
-            float newFullness = math.clamp(
+            float newFullness = 
                 needs.Fullness +
                 (action.NeedsMatrix[0] * duration) +
-                (naturalDecrease[0] * duration),
-                0, 100
-            );
+                (naturalDecrease[0] * duration);
 
-            float newEnergy = math.clamp(
+            float newEnergy = 
                 needs.Energy +
                 (action.NeedsMatrix[1] * duration) +
-                (naturalDecrease[1] * duration),
-                0, 100
-            );
+                (naturalDecrease[1] * duration);
 
-            return (newFullness + newEnergy, true);
+            var newMoodValue = newFullness + newEnergy;
+
+            return (newMoodValue, newMoodValue > 0);
         }
     }
 }

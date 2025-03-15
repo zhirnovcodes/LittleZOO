@@ -113,7 +113,13 @@ public static class GrassFactory
         {
             ActionId = Zoo.Enums.ActionID.Eat,
             NeedId = Zoo.Enums.NeedType.Fullness,
-            NeedsMatrix = new float2(0.2f, 0.1f)
+            NeedsMatrix = new float2(-100f, 0.1f)
+        });
+        ecb.AppendToBuffer(grassEntity, new AdvertisedActionItem
+        {
+            ActionId = Zoo.Enums.ActionID.Sleep,
+            NeedId = Zoo.Enums.NeedType.Energy,
+            NeedsMatrix = new float2(1f, 2f)
         });
 
         // Add reproduction component if can reproduce
@@ -233,8 +239,14 @@ public static class GrassFactory
         {
             ActionId = Zoo.Enums.ActionID.Eat,
             NeedId = Zoo.Enums.NeedType.Fullness,
-            NeedsMatrix = new float2 ( 0.2f, 0.1f )
-        }) ;
+            NeedsMatrix = new float2 (-100, -0.1f )
+        });
+        ecb.AppendToBuffer(grassEntity, new AdvertisedActionItem
+        {
+            ActionId = Zoo.Enums.ActionID.Sleep,
+            NeedId = Zoo.Enums.NeedType.Energy,
+            NeedsMatrix = new float2( 1f, 2f)
+        });
 
         // Add reproduction component if can reproduce
         if (random.NextFloat(0,1) <= 0.9f)
@@ -248,6 +260,9 @@ public static class GrassFactory
             });
         }
     }
+
+
+
 
     private static float GetRandomVariation(Random random, float min, float max)
     {

@@ -31,6 +31,7 @@ public partial struct EatingActionSystem : ISystem
         // Get component lookups
         var transformLookup = SystemAPI.GetComponentLookup<LocalTransform>();
         var edibleLookup = SystemAPI.GetComponentLookup<EdibleComponent>();
+        var referenceLookup = SystemAPI.GetBufferLookup<Child>();
 
         // TODO from blob
         var entity = SystemAPI.GetSingletonEntity<ActorsSpawnComponent>();
@@ -44,7 +45,8 @@ public partial struct EatingActionSystem : ISystem
             EdibleLookup = edibleLookup,
             Ecb = ecb,
             DeltaTime = deltaTime,
-            WalkingSpeed = walkingSpeed
+            WalkingSpeed = walkingSpeed,
+            ReferenceLookup = referenceLookup
         }.Schedule(state.Dependency);
 
         state.Dependency.Complete();
@@ -58,6 +60,7 @@ public partial struct EatingActionSystem : ISystem
     {
         public ComponentLookup<LocalTransform> TransformLookup;
         public ComponentLookup<EdibleComponent> EdibleLookup;
+        public BufferLookup<Child> ReferenceLookup;
 
         public EntityCommandBuffer Ecb;
         public float WalkingSpeed;
@@ -75,27 +78,30 @@ public partial struct EatingActionSystem : ISystem
             ref EatingStateTag eatingTag,
             ref ActorNeedsComponent needs,
             in MoveToTargetOutputComponent moveOutput,
-            in HungerComponent hunger
+            in NeedBasedSystemOutput needOutput
         )
         {
+            if (needOutput.Action == ActionID.Eat == false)
+            {
+                SetSearchingState(entity);
+                Ecb.SetIdleAnimation(ReferenceLookup.GetView(entity));
+                return;
+            }
+
+            var target = needOutput.Advertiser;
 
             // TODO lost sight
-            if (EdibleLookup.TryGetComponent(hunger.Target, out var edable) == false)
+            if (EdibleLookup.TryGetComponent(target, out var edable) == false)
             {
                 SetSearchingState(entity);
+                Ecb.SetIdleAnimation(ReferenceLookup.GetView(entity));
                 return;
             }
 
-            if (TransformLookup.TryGetComponent(hunger.Target, out var edableTransform) == false)
+            if (TransformLookup.TryGetComponent(target, out var edableTransform) == false)
             {
                 SetSearchingState(entity);
-                return;
-            }
-
-            // TODO to const
-            if (needs.Fullness <= 90f)
-            {
-                SetSearchingState(entity);
+                Ecb.SetIdleAnimation(ReferenceLookup.GetView(entity));
                 return;
             }
 
@@ -114,24 +120,32 @@ public partial struct EatingActionSystem : ISystem
                 if (eatingTag.BiteTimeElapsed >= eatDeltaTime)
                 {
                     eatingTag.BiteTimeElapsed = 0;
-                    Bite(ref needs, hunger.Target);
+                    Bite(ref needs, target);
 
                     if (edable.Wholeness <= 0)
                     {
-                        SetSearchingState(entity);
-                        Ecb.DestroyEntity(hunger.Target);
+                        Ecb.DestroyEntity(target);
                         return;
                     }
                 }
+                return;
             }
-            else
+
+            needs.Energy -= DeltaTime * needs.EnergyDecayFactor;
+            needs.Fullness -= DeltaTime * needs.HungerDecayFactor;
+
+            if (needs.Fullness <= 0)
             {
-                eatingTag.BiteTimeElapsed = 0;
+                UnityEngine.Debug.Log("Die");
+                Ecb.DestroyEntity(entity);
+                return;
             }
+
+            eatingTag.BiteTimeElapsed = 0;
         }
 
         private void Bite(ref ActorNeedsComponent needs, Entity target)
-        {
+        {// TODO from advertiser
             var edibleComponent = EdibleLookup.GetRefRW(target);
 
             var oldWholeness = edibleComponent.ValueRO.Wholeness;
@@ -149,7 +163,6 @@ public partial struct EatingActionSystem : ISystem
         {
             Ecb.SetComponentEnabled<SearchingStateTag>(entity, true);
             Ecb.SetComponentEnabled<EatingStateTag>(entity, false);
-
         }
     }
 }

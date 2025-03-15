@@ -31,8 +31,7 @@ public partial struct HungerSystem : ISystem
 
         // Process hunger and destroy starved entities
         foreach (var (needs, entity) in
-                 SystemAPI.Query<RefRW<ActorNeedsComponent>>()
-                     .WithAll<ActorNeedsComponent, HungerComponent>().WithEntityAccess())
+                 SystemAPI.Query<RefRW<ActorNeedsComponent>>().WithEntityAccess())
         {
             needs.ValueRW.Fullness -= needs.ValueRW.HungerDecayFactor * deltaTime;
 
@@ -46,7 +45,7 @@ public partial struct HungerSystem : ISystem
 
         ecb.Playback(state.EntityManager);
         ecb.Dispose();
-
+        /*
         // Schedule a parallel job for finding food targets
 
         state.Dependency = new FindFoodTargetsJob
@@ -54,7 +53,7 @@ public partial struct HungerSystem : ISystem
             EdibleItems = EdibleItems,
             TransformLookup = TransformLookup,
             DeltaTime = deltaTime
-        }.ScheduleParallel(state.Dependency);
+        }.ScheduleParallel(state.Dependency);*/
     }
 
     [BurstCompile]
