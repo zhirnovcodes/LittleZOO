@@ -19,6 +19,7 @@ namespace Zoo.Physics
         {
             state.RequireForUpdate<GravityComponent>();
             state.RequireForUpdate<PlanetComponent>();
+            state.RequireForUpdate<SimulationConfigComponent>();
         }
 
         [BurstCompile]
@@ -28,12 +29,16 @@ namespace Zoo.Physics
 
             var planetEntity = SystemAPI.GetSingletonEntity<PlanetComponent>();
             var planetTransform = SystemAPI.GetComponentRO<LocalTransform>(planetEntity);
+            var config = SystemAPI.GetSingleton<SimulationConfigComponent>();
+
             float3 planetCenter = planetTransform.ValueRO.Position;
+            float gravityForce = config.BlobReference.Value.World.GravityForce;
 
             var gravityJob = new GravityJob
             {
                 DeltaTime = deltaTime,
-                PlanetCenter = planetCenter
+                PlanetCenter = planetCenter,
+                GravityForce = gravityForce
             };
 
             state.Dependency = gravityJob.ScheduleParallel(state.Dependency);
@@ -43,6 +48,7 @@ namespace Zoo.Physics
         public partial struct GravityJob : IJobEntity
         {
             public float DeltaTime;
+            public float GravityForce;
             public float3 PlanetCenter;
 
             public void Execute(
@@ -62,38 +68,3 @@ namespace Zoo.Physics
         }
     }
 }
-
-
-/*
- * 
- *         private static bool IsTouchingPlanet(float3 planetCenter, float planetScale, float3 actorPosition, float actorScale)
-        {
-
-            var minDistance = planetScale / 2f + actorScale / 2f;
-            var distanceSq = math.distancesq(planetCenter, actorPosition);
-            return distanceSq <= (minDistance * minDistance);
-        }
-
-        private static bool IsTouchingPlanet(float3 gravityDirection, float3 actorPosition, float actorScale, in CollisionWorld world)
-        {
-            const float minTouchDistance = 0.01f;
-
-            var startPos = actorPosition + gravityDirection * actorScale / 2f;
-            var endPos = startPos + gravityDirection * minTouchDistance;
-
-            var input = new RaycastInput()
-            {
-                Start = startPos,
-                End = endPos,
-                Filter = new CollisionFilter()
-                {
-                    BelongsTo = Enums.Layers.ActorDynamic,
-                    CollidesWith = Enums.Layers.Planet, 
-                    GroupIndex = 0
-                }
-            };
-
-            return world.CastRay(input);
-        }
-
-*/

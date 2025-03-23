@@ -22,16 +22,18 @@ public static class PigsFactory
 
         commandBuffer.AddComponent(newPig, new MoveToTargetInputComponent { Speed = speed });
         commandBuffer.AddComponent(newPig, new MoveToTargetOutputComponent());
-        commandBuffer.AddComponent(newPig, new HungerComponent());
+        //commandBuffer.AddComponent(newPig, new HungerComponent());
 
         // States
         commandBuffer.AddComponent(newPig, new StateTimeComponent());
         commandBuffer.AddComponent(newPig, new SearchingStateTag());
         commandBuffer.AddComponent(newPig, new EatingStateTag());
         commandBuffer.AddComponent(newPig, new SleepingStateTag());
+        commandBuffer.AddComponent(newPig, new DyingStateTag());
 
         commandBuffer.SetComponentEnabled<EatingStateTag>(newPig, false);
         commandBuffer.SetComponentEnabled<SleepingStateTag>(newPig, false);
+        commandBuffer.SetComponentEnabled<DyingStateTag>(newPig, false);
 
         commandBuffer.AddComponent(newPig, new NeedBasedSystemOutput());
         commandBuffer.AddBuffer<AdvertisedActionItem>(newPig);

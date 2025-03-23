@@ -14,7 +14,7 @@ public class ActorNeedAuthoring : MonoBehaviour
 
             AddComponent(entity, new ActorNeedsComponent
             {
-                Fullness = 100,
+                Fullness = 1,
                 Energy = 100,
                 HungerTuningFactor = authoring.HungerTuningFactor,
                 EnergyTuningFactor = 1,

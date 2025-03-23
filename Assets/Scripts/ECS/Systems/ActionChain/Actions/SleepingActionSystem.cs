@@ -51,10 +51,6 @@ public partial struct SleepingActionSystem : ISystem
         public float WalkingSpeed;
         public float DeltaTime;
 
-        // TODO to blob
-        const float eatDeltaTime = 1f;
-        const float biteWholeness = 10f;
-
         [BurstCompile]
         private void Execute
         (
@@ -71,7 +67,7 @@ public partial struct SleepingActionSystem : ISystem
 
             if (TransformLookup.TryGetComponent(target, out var sleepableTransform) == false)
             {
-                WakeUp(entity, ReferenceLookup.GetView(entity), ref sleepingTag);
+                WakeUp(entity, ref sleepingTag);
                 return;
             }
 
@@ -79,14 +75,14 @@ public partial struct SleepingActionSystem : ISystem
             {
                 if (needOutput.Action == ActionID.Sleep == false)
                 {
-                    WakeUp(entity, ReferenceLookup.GetView(entity), ref sleepingTag);
+                    WakeUp(entity, ref sleepingTag);
                     return;
                 }
 
 
                 if (BufferLookup.TryGetBuffer(target, out var buffer) == false)
                 {
-                    WakeUp(entity, ReferenceLookup.GetView(entity), ref sleepingTag);
+                    WakeUp(entity, ref sleepingTag);
                     return;
                 }
 
@@ -99,7 +95,7 @@ public partial struct SleepingActionSystem : ISystem
 
             if (hasArrived)
             {
-                FallAsleep(entity, ReferenceLookup.GetView(entity), ref sleepingTag);
+                FallAsleep(entity, ref sleepingTag);
                 return;
             }
 
@@ -114,7 +110,7 @@ public partial struct SleepingActionSystem : ISystem
             if (needs.Fullness <= 0)
             {
                 UnityEngine.Debug.Log("Die");
-                Ecb.DestroyEntity(entity);
+                Die(entity);
             }
 
 
@@ -136,21 +132,40 @@ public partial struct SleepingActionSystem : ISystem
             needs.Energy += DeltaTime * foundEnergy;
         } 
 
-        private void FallAsleep(Entity entity, Entity viewEntity, ref SleepingStateTag tag)
+        private void FallAsleep(Entity entity, ref SleepingStateTag tag)
         {
+            var viewEntity = ReferenceLookup.GetView(entity);
+
             // TODO change ingterval of thinking
             Ecb.SetSleepingAnimation(viewEntity);
             Ecb.SetComponentEnabled<MoveToTargetInputComponent>(entity, false);
             tag.IsSleeping = true;
         }
 
-        private void WakeUp(Entity entity, Entity viewEntity, ref SleepingStateTag tag)
+        private void WakeUp(Entity entity, ref SleepingStateTag tag)
         {
+            var viewEntity = ReferenceLookup.GetView(entity);
+
             Ecb.SetComponentEnabled<SearchingStateTag>(entity, true);
-            Ecb.SetComponentEnabled<EatingStateTag>(entity, false);
+            Ecb.SetComponentEnabled<SleepingStateTag>(entity, false);
             Ecb.SetIdleAnimation(viewEntity);
             Ecb.SetComponentEnabled<MoveToTargetInputComponent>(entity, true);
             tag.IsSleeping = false;
+        }
+
+        private void Die(Entity entity)
+        {
+            var viewEntity = ReferenceLookup.GetView(entity);
+
+            Ecb.SetComponentEnabled<DyingStateTag>(entity, true);
+            Ecb.SetComponentEnabled<MoveToTargetInputComponent>(entity, false);
+            Ecb.SetComponentEnabled<SleepingStateTag>(entity, false);
+            Ecb.SetComponentEnabled<ActorNeedsComponent>(entity, false);
+            Ecb.SetComponentEnabled<StateTimeComponent>(entity, false);
+            Ecb.SetComponentEnabled<VisionComponent>(entity, false);
+
+            Ecb.SetDyingAnimation(viewEntity);
+
         }
     }
 }

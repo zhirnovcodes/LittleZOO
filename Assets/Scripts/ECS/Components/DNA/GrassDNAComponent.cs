@@ -11,8 +11,9 @@ public struct GrassDNAComponent : IComponentData
     public Entity Prefab;
 
     // Growing parameters
-    public float3 MinSize;
-    public float3 MaxSize;
+    public float MinSize;
+    public float MaxSize;
+    public float MinWholeness;
     public float MaxWholeness;
     public float GrowthSpeed;
 
@@ -24,10 +25,12 @@ public struct GrassDNAComponent : IComponentData
     public float MaxNutrition;
 
     // Reproduction parameters
-    public float ReproductionFunctionFactor;
+    public float ReproductionFunctionSpan;
     public float ReproductionFunctionHeight;
     public float ReproductionInterval;
+    public float ReproductiveChance;
 
-    // Random seed for this grass
-    public uint RandomSeed;
+    // Advertising values
+    public float2 AdvertisedFullness;
+    public float2 AdvertisedEnergy;
 }

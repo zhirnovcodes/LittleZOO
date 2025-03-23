@@ -8,7 +8,10 @@ using Zoo.Enums;
 public partial struct NeedBasedDecisionSystem : ISystem
 {
     [BurstCompile]
-    public void OnCreate(ref SystemState state) { }
+    public void OnCreate(ref SystemState state)
+    {
+        state.RequireForUpdate<SimulationConfigComponent>();
+    }
 
     [BurstCompile]
     public void OnDestroy(ref SystemState state) { }
@@ -18,6 +21,7 @@ public partial struct NeedBasedDecisionSystem : ISystem
     {
         var ecbSystem = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSystem.CreateCommandBuffer(state.WorldUnmanaged);
+        var config = SystemAPI.GetSingleton<SimulationConfigComponent>();
 
         var parallelEcb = ecb.AsParallelWriter();
         var advertisedActionLookup = SystemAPI.GetBufferLookup<AdvertisedActionItem>(true);
@@ -25,28 +29,21 @@ public partial struct NeedBasedDecisionSystem : ISystem
         var job = new NeedBasedDecisionJob
         {
             Ecb = parallelEcb,
-            AdvertisedActionLookup = advertisedActionLookup
+            AdvertisedActionLookup = advertisedActionLookup,
+            HungerDecayFactor = config.BlobReference.Value.Needs.HungerDecayFactor,
+            EnergyDecayFactor = config.BlobReference.Value.Needs.EnergyDecayFactor
         };
 
         // Schedule the job properly
         state.Dependency = job.ScheduleParallel(state.Dependency);
     }
-    /*
-    partial struct LogJob : IJobEntity
-    {
-        void Execute(
-                in NeedBasedSystemOutput output
-            )
-        {
-            if (output.Advertiser != Entity.Null)
-                JobLogger.Log(output.Action);
-        }
-    }*/
 
     [BurstCompile]
     partial struct NeedBasedDecisionJob : IJobEntity
     {
         [ReadOnly] public BufferLookup<AdvertisedActionItem> AdvertisedActionLookup;
+        public float2 HungerDecayFactor;
+        public float2 EnergyDecayFactor;
         public EntityCommandBuffer.ParallelWriter Ecb;
 
         void Execute(
@@ -61,9 +58,6 @@ public partial struct NeedBasedDecisionSystem : ISystem
 
             foreach (var visibleEntity in visibleEntities)
             {
-                //todo blob
-                float2 naturalDecrease = new float2(-0.1f, -0.2f);
-
                 var advertiser = visibleEntity.VisibleEntity;
 
                 if (!AdvertisedActionLookup.TryGetBuffer(advertiser, out var actions))
@@ -71,6 +65,8 @@ public partial struct NeedBasedDecisionSystem : ISystem
 
                 foreach (var action in actions)
                 {
+                    var naturalDecrease = GetNeedDecayFactor(action.NeedId);
+
                     var (sum, valid) = CalculateActionEffect(
                         in actorNeeds,
                         in action,
@@ -101,6 +97,18 @@ public partial struct NeedBasedDecisionSystem : ISystem
                 Action = bestAction,
                 Advertiser = bestAdvertiser
             });
+        }
+
+        private float2 GetNeedDecayFactor(NeedType need)
+        {
+            switch (need)
+            {
+                case NeedType.Fullness:
+                    return HungerDecayFactor;
+                case NeedType.Energy:
+                    return EnergyDecayFactor;
+            }
+            return 0;
         }
 
         (float Sum, bool Valid) CalculateActionEffect(

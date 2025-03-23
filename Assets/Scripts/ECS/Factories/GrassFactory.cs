@@ -5,53 +5,125 @@ using Random = Unity.Mathematics.Random;
 // Updated static factory class for creating grass entities
 public static class GrassFactory
 {
-    private static GrassDNAComponent CreateRandomGrassDNA(Triangle triangle, Entity prefab, Random random)
+    private static GrassDNAComponent CreateRandomGrassDNA(Triangle triangle, Entity prefab, ref Random random, in SimulationConfigComponent config)
     {
         // Calculate random attributes
-        float randomWidth = random.NextFloat(triangle.RadiusInner * 0.5f, triangle.RadiusOuter * 0.8f);
+        var widthVar = config.BlobReference.Value.Entities.Grass.Stats.Size;
+        var sizeMin = triangle.RadiusInner * widthVar.x;
+        var sizeMax = triangle.RadiusOuter * widthVar.y;
+
+        var minWholenessVar = config.BlobReference.Value.Entities.Grass.Stats.MinWholeness;
+        var maxWholenessVar = config.BlobReference.Value.Entities.Grass.Stats.MaxWholeness;
+        var maxWholeness = GetRandomVariation(ref random, maxWholenessVar);
+        var minWholeness = GetRandomVariation(ref random, minWholenessVar);
+
+        var growthSpeedVar = config.BlobReference.Value.Entities.Grass.Stats.GrowthSpeed;
+        var growthSpeed = GetRandomVariation(ref random, growthSpeedVar);
+
+        var agingFunctionSpanVar = config.BlobReference.Value.Entities.Grass.Stats.AgingFunctionSpan;
+        var agingFunctionHeightVar = config.BlobReference.Value.Entities.Grass.Stats.AgingFunctionHeight;
+        var agingFunctionSpan = GetRandomVariation(ref random, agingFunctionSpanVar);
+        var agingFunctionHeight = GetRandomVariation(ref random, agingFunctionHeightVar);
+
+        var nutritionVar = config.BlobReference.Value.Entities.Grass.Stats.Nutrition;
+        var nutrition = GetRandomVariation(ref random, nutritionVar);
+
+        var reproductionSpanVar = config.BlobReference.Value.Entities.Grass.Stats.ReproductionSpan;
+        var reproudctionHeightVar = config.BlobReference.Value.Entities.Grass.Stats.ReproductionHeight;
+        var reproudctionIntervalVar = config.BlobReference.Value.Entities.Grass.Stats.ReproductionInterval;
+        var reproductiveChanceVar = config.BlobReference.Value.Entities.Grass.Stats.ReproductionChance;
+        var reproductionSpan = GetRandomVariation(ref random, reproductionSpanVar);
+        var reproductionHeight = GetRandomVariation(ref random, reproudctionHeightVar);
+        var reproductionInterval = GetRandomVariation(ref random, reproudctionIntervalVar);
+        var reproductiveChance = GetRandomVariation(ref random, reproductiveChanceVar);
+
+        var advertisedEnergyVar = config.BlobReference.Value.Advertisers.Grass.EnergyValue;
+        var advertisedFullnessVar = config.BlobReference.Value.Advertisers.Grass.FullnessValue;
+        var advertisedEnergy = GetRandomVariation(ref random, advertisedEnergyVar);
+        var advertisedFullness = GetRandomVariation(ref random, advertisedFullnessVar);
 
         GrassDNAComponent dna = new GrassDNAComponent
         {
             Prefab = prefab,
 
             // Growing parameters
-            MinSize = new float3(0.2f, 0.2f, 0.2f),
-            MaxSize = new float3(randomWidth, 1f, randomWidth),
-            MaxWholeness = random.NextFloat(80, 100),
-            GrowthSpeed = random.NextFloat(2, 15),
+            MinSize = sizeMin,
+            MaxSize = sizeMax,
+            MinWholeness = minWholeness,
+            MaxWholeness = maxWholeness,
+            GrowthSpeed = growthSpeed,
 
             // Aging parameters
-            AgingFunctionSpan = random.NextFloat(20, 50),
-            AgingFunctionHeight = random.NextFloat(0.01f, 0.05f),
+            AgingFunctionSpan = agingFunctionSpan,
+            AgingFunctionHeight = agingFunctionHeight,
 
             // Edible parameters
-            MaxNutrition = random.NextFloat(20, 50),
+            MaxNutrition = nutrition,
 
             // Reproduction parameters
-            ReproductionFunctionFactor = random.NextFloat(10, 100),
-            ReproductionFunctionHeight = random.NextFloat(0.1f, 0.8f),
-            ReproductionInterval = random.NextFloat(0.2f, 3),
+            ReproductionFunctionSpan = reproductionSpan,
+            ReproductionFunctionHeight = reproductionHeight,
+            ReproductionInterval = reproductionInterval,
+            ReproductiveChance = reproductiveChance,
 
-            // Random seed
-            RandomSeed = (uint)random.NextInt()
+            // Advertisers
+            AdvertisedEnergy = advertisedEnergy,
+            AdvertisedFullness = advertisedFullness
         };
 
         return dna;
     }
 
-    // Updated to use GrassDNAComponent and regular ECB (not parallel)
-    public static void CreateGrass(EntityCommandBuffer ecb, int triangleId, uint randomSeed, in IcosphereComponent icosphere, Entity prefab)
+    private static GrassDNAComponent CreateChildGrassDNA(GrassDNAComponent parentDNA,  ref Random random)
     {
-        var random = Random.CreateFromIndex(randomSeed);
+        float2 deviation = new float2(0.9f, 1.1f);
 
-        // Create the grass entity
-        Entity grassEntity = ecb.Instantiate(prefab);
+        GrassDNAComponent childDNA = new GrassDNAComponent
+        {
+            Prefab = parentDNA.Prefab,
 
-        // Get triangle data from the icosphere blob
+            // Growing parameters with variations
+            MinSize = GetRandomVariation(ref random, parentDNA.MinSize, deviation),
+            MaxSize = GetRandomVariation(ref random, parentDNA.MaxSize, deviation),
+            MinWholeness = GetRandomVariation(ref random, parentDNA.MinWholeness, deviation),
+            MaxWholeness = GetRandomVariation(ref random, parentDNA.MaxWholeness, deviation),
+            GrowthSpeed = GetRandomVariation(ref random, parentDNA.GrowthSpeed, deviation),
+
+            // Aging parameters with variations
+            AgingFunctionSpan = GetRandomVariation(ref random, parentDNA.AgingFunctionSpan, deviation),
+            AgingFunctionHeight = GetRandomVariation(ref random, parentDNA.AgingFunctionHeight, deviation),
+
+            // Edible parameters with variations
+            MaxNutrition = GetRandomVariation(ref random, parentDNA.MaxNutrition, deviation),
+
+            // Reproduction parameters with variations
+            ReproductionFunctionSpan = GetRandomVariation(ref random, parentDNA.ReproductionFunctionSpan, deviation),
+            ReproductionFunctionHeight = GetRandomVariation(ref random, parentDNA.ReproductionFunctionHeight, deviation),
+            ReproductionInterval = GetRandomVariation(ref random, parentDNA.ReproductionInterval, deviation),
+            ReproductiveChance = GetRandomVariation(ref random, parentDNA.ReproductiveChance, deviation),
+
+            // Advertisers
+            AdvertisedEnergy = GetRandomVariation(ref random, parentDNA.AdvertisedEnergy, deviation),
+            AdvertisedFullness = GetRandomVariation(ref random, parentDNA.AdvertisedFullness, deviation)
+        };
+
+        return childDNA;
+    }
+
+    // Updated to use GrassDNAComponent and regular ECB (not parallel)
+    public static void CreateRandomGrass(EntityCommandBuffer ecb, int triangleId, ref Random random, in IcosphereComponent icosphere, Entity prefab, in SimulationConfigComponent config)
+    {
         var triangle = icosphere.GetTriangle(triangleId);
+        
+        var dna = CreateRandomGrassDNA(triangle, prefab, ref random, in config);
 
-        // Create the DNA component with all parameters
-        GrassDNAComponent dna = CreateRandomGrassDNA(triangle, prefab, random);
+        CreateGrass(ecb, in dna, in icosphere, triangleId, ref random);
+    }
+
+    public static void CreateGrass(EntityCommandBuffer ecb, in GrassDNAComponent dna, in IcosphereComponent icosphere, int triangleId, ref Random random)
+    {
+        // Create the grass entity
+        Entity grassEntity = ecb.Instantiate(dna.Prefab);
 
         // Add the DNA component
         ecb.AddComponent(grassEntity, dna);
@@ -62,27 +134,32 @@ public static class GrassFactory
             TriangleId = triangleId
         });
 
+        var triangle = icosphere.GetTriangle(triangleId);
+
         // Calculate position based on the triangle centroid on surface
         float3 position = triangle.CentroidOnSurface;
 
+        var randomSeed = random.NextUInt();
+        var randomNew = Random.CreateFromIndex(randomSeed);
+
         // Get rotation based on the triangle orientation
-        quaternion rotation = icosphere.GetRotation(triangleId, random.NextInt(0, 2));
+        quaternion rotation = icosphere.GetRotation(triangle.TriangleIndex, randomNew.NextInt(0, 2));
 
         // Add a local transform component for positioning and scaling
         ecb.AddComponent(grassEntity, new LocalTransform
         {
             Position = position,
             Rotation = rotation,
-            Scale = 0.2f // Initial small scale
+            Scale = 0.1f // Initial small scale
         });
 
         // Add aging component
         ecb.AddComponent(grassEntity, new AgingComponent
         {
-            AgeElapsed = random.NextFloat(0, 5), // Start with a random age
+            AgeElapsed = 0f, // Start fresh
             AgingFunctionSpan = dna.AgingFunctionSpan,
             AgingFunctionHeight = dna.AgingFunctionHeight,
-            Wholeness = random.NextFloat(50, 100) // Start with random wholeness
+            Wholeness = dna.MinWholeness // Start with low wholeness
         });
 
         // Add growing component
@@ -98,14 +175,13 @@ public static class GrassFactory
         ecb.AddComponent(grassEntity, new EdibleComponent
         {
             Nutrition = 0, // Will be calculated based on wholeness
-            MaxNutrition = dna.MaxNutrition,
-            SizeMax = dna.MaxSize.x
+            MaxNutrition = dna.MaxNutrition
         });
 
         // Add random component
         ecb.AddComponent(grassEntity, new ActorRandomComponent
         {
-            Random = Random.CreateFromIndex(dna.RandomSeed)
+            Random = randomNew
         });
 
         ecb.AddBuffer<AdvertisedActionItem>(grassEntity);
@@ -113,23 +189,21 @@ public static class GrassFactory
         {
             ActionId = Zoo.Enums.ActionID.Eat,
             NeedId = Zoo.Enums.NeedType.Fullness,
-            NeedsMatrix = new float2(-100f, 0.1f)
+            NeedsMatrix = dna.AdvertisedFullness
         });
         ecb.AppendToBuffer(grassEntity, new AdvertisedActionItem
         {
             ActionId = Zoo.Enums.ActionID.Sleep,
             NeedId = Zoo.Enums.NeedType.Energy,
-            NeedsMatrix = new float2(1f, 2f)
+            NeedsMatrix = dna.AdvertisedEnergy
         });
 
         // Add reproduction component if can reproduce
-        var canReproduce = random.NextFloat() < 0.5f;
-
-        if (canReproduce)
+        if (IsBeating(ref randomNew, dna.ReproductiveChance))
         {
             ecb.AddComponent(grassEntity, new PlantReproductionComponent
             {
-                FunctionFactor = dna.ReproductionFunctionFactor,
+                FunctionFactor = dna.ReproductionFunctionSpan,
                 FunctionHeight = dna.ReproductionFunctionHeight,
                 Interval = dna.ReproductionInterval,
                 ReproductionTimeElapsed = 0f // Initialize elapsed time to 0
@@ -138,134 +212,37 @@ public static class GrassFactory
     }
 
     // Creates a new grass entity based on a parent entity's DNA
-    public static void CreateGrass(EntityCommandBuffer ecb, int triangleId, 
-                                 GrassDNAComponent parentDNA, uint randomSeed,
+    public static void CreateChildGrass(EntityCommandBuffer ecb, int triangleId, 
+                                 in GrassDNAComponent parentDNA, ref Random random,
                                  in IcosphereComponent icosphere)
     {
-        var random = Random.CreateFromIndex(randomSeed);
-
-        // Get triangle data from the icosphere blob
-        var triangle = icosphere.GetTriangle(triangleId);
-
-        // Calculate random width based on triangle
-        float randomWidth = random.NextFloat(triangle.RadiusInner * 0.5f, triangle.RadiusOuter * 0.8f);
-
-        // Create a new DNA with variations from parent
-        GrassDNAComponent childDNA = new GrassDNAComponent
-        {
-            Prefab = parentDNA.Prefab,
-
-            // Growing parameters with variations
-            MinSize = parentDNA.MinSize,
-            MaxSize = new float3(randomWidth, 1f, randomWidth),
-            MaxWholeness = parentDNA.MaxWholeness * GetRandomVariation(random, 0.9f, 1.1f),
-            GrowthSpeed = parentDNA.GrowthSpeed * GetRandomVariation(random, 0.9f, 1.1f),
-
-            // Aging parameters with variations
-            AgingFunctionSpan = parentDNA.AgingFunctionSpan * GetRandomVariation(random, 0.9f, 1.1f),
-            AgingFunctionHeight = parentDNA.AgingFunctionHeight * GetRandomVariation(random, 0.9f, 1.1f),
-
-            // Edible parameters with variations
-            MaxNutrition = parentDNA.MaxNutrition * GetRandomVariation(random, 0.9f, 1.1f),
-
-            // Reproduction parameters with variations
-            ReproductionFunctionFactor = parentDNA.ReproductionFunctionFactor * GetRandomVariation(random, 0.9f, 1.1f),
-            ReproductionFunctionHeight = parentDNA.ReproductionFunctionHeight * GetRandomVariation(random, 0.9f, 1.1f),
-            ReproductionInterval = parentDNA.ReproductionInterval * GetRandomVariation(random, 0.95f, 1.05f),
-
-            // New random seed
-            RandomSeed = (uint)random.NextInt()
-        };
-
-        // Create the grass entity
-        Entity grassEntity = ecb.Instantiate(parentDNA.Prefab);
-
-        // Add the DNA component
-        ecb.AddComponent(grassEntity, childDNA);
-
-        // Add the transform component
-        ecb.AddComponent(grassEntity, new IcosphereTransform
-        {
-            TriangleId = triangleId
-        });
-
-        // Calculate position based on the triangle centroid on surface
-        float3 position = triangle.CentroidOnSurface;
-
-        // Get rotation based on the triangle orientation
-        quaternion rotation = icosphere.GetRotation(triangleId, random.NextInt(0,2));
-
-        // Add a local transform component for positioning and scaling
-        ecb.AddComponent(grassEntity, new LocalTransform
-        {
-            Position = position,
-            Rotation = rotation,
-            Scale = 0.1f // Initial small scale
-        });
-
-        // Add aging component
-        ecb.AddComponent(grassEntity, new AgingComponent
-        {
-            AgeElapsed = 0f, // Start fresh
-            AgingFunctionSpan = childDNA.AgingFunctionSpan,
-            AgingFunctionHeight = childDNA.AgingFunctionHeight,
-            Wholeness = 10f // Start with low wholeness
-        });
-
-        // Add growing component
-        ecb.AddComponent(grassEntity, new GrowingComponent
-        {
-            MinSize = childDNA.MinSize,
-            MaxSize = childDNA.MaxSize,
-            MaxWholeness = childDNA.MaxWholeness,
-            GrowthSpeed = childDNA.GrowthSpeed
-        });
-
-        // Add edible component
-        ecb.AddComponent(grassEntity, new EdibleComponent
-        {
-            Nutrition = 0, // Will be calculated based on wholeness
-            MaxNutrition = childDNA.MaxNutrition
-        });
-
-        // Add random component
-        ecb.AddComponent(grassEntity, new ActorRandomComponent
-        {
-            Random = Random.CreateFromIndex(childDNA.RandomSeed)
-        });
-
-        ecb.AddBuffer<AdvertisedActionItem>(grassEntity);
-        ecb.AppendToBuffer(grassEntity, new AdvertisedActionItem
-        {
-            ActionId = Zoo.Enums.ActionID.Eat,
-            NeedId = Zoo.Enums.NeedType.Fullness,
-            NeedsMatrix = new float2 (-100, -0.1f )
-        });
-        ecb.AppendToBuffer(grassEntity, new AdvertisedActionItem
-        {
-            ActionId = Zoo.Enums.ActionID.Sleep,
-            NeedId = Zoo.Enums.NeedType.Energy,
-            NeedsMatrix = new float2( 1f, 2f)
-        });
-
-        // Add reproduction component if can reproduce
-        if (random.NextFloat(0,1) <= 0.9f)
-        {
-            ecb.AddComponent(grassEntity, new PlantReproductionComponent
-            {
-                FunctionFactor = childDNA.ReproductionFunctionFactor,
-                FunctionHeight = childDNA.ReproductionFunctionHeight,
-                Interval = childDNA.ReproductionInterval,
-                ReproductionTimeElapsed = 0f // Initialize elapsed time to 0
-            });
-        }
+        var childDna = CreateChildGrassDNA(parentDNA, ref random);
+        CreateGrass(ecb, childDna, in icosphere, triangleId, ref random);
     }
 
 
-
-
-    private static float GetRandomVariation(Random random, float min, float max)
+    private static bool IsBeating(ref Random random, float chance)
     {
-        return random.NextFloat(min, max);
+        return random.NextFloat(0, 1) <= chance;
+    }
+
+    private static float GetRandomVariation(ref Random random, float oldValue, float2 deviation)
+    {
+        return random.NextFloat(deviation.x, deviation.y) * oldValue;
+    }
+
+    private static float2 GetRandomVariation(ref Random random, float2 oldValue, float2 deviation)
+    {
+        return random.NextFloat(deviation.x, deviation.y) * oldValue;
+    }
+
+    private static float GetRandomVariation(ref Random random, float2 minMax)
+    {
+        return random.NextFloat(minMax.x, minMax.y);
+    }
+
+    private static float2 GetRandomVariation(ref Random random, float4 minMax)
+    {
+        return new float2(random.NextFloat(minMax.x, minMax.z), random.NextFloat(minMax.y, minMax.w));
     }
 }

@@ -45,7 +45,7 @@ public partial struct PlantReproductionSystem : ISystem
 
         foreach (var (reproduction, aging, dna, transform, actorRandom) in
                 SystemAPI.Query<RefRW<PlantReproductionComponent>, RefRO<AgingComponent>,
-                            RefRO<GrassDNAComponent>, RefRO<IcosphereTransform>, RefRO<ActorRandomComponent>>())
+                            RefRO<GrassDNAComponent>, RefRO<IcosphereTransform>, RefRW<ActorRandomComponent>>())
         {
             // Update reproduction time elapsed
             reproduction.ValueRW.ReproductionTimeElapsed += deltaTime;
@@ -66,7 +66,6 @@ public partial struct PlantReproductionSystem : ISystem
                 if (actorRandom.ValueRO.Random.NextFloat(0, 1) < reproductionChance)
                 {
                     // Try to find an available neighboring triangle
-                    bool foundSpot = false;
                     int neighbourId = actorRandom.ValueRO.Random.NextInt(0, 2);
 
                     // Try each neighboring triangle
@@ -82,11 +81,11 @@ public partial struct PlantReproductionSystem : ISystem
                     if (triangleIsEmpty)
                     {
                         // Create the new grass entity with attributes based on the parent DNA
-                        GrassFactory.CreateGrass(
+                        GrassFactory.CreateChildGrass(
                             ecb,
                             neighborTriangleId,
                             dna.ValueRO,
-                            (uint)actorRandom.ValueRO.Random.NextInt(),
+                            ref actorRandom.ValueRW.Random,
                             icosphere
                         );
                     }

@@ -17,9 +17,9 @@ public class SimulationConfigAsset : ScriptableObject
     public Vector2Int PigsCount = new Vector2Int(10, 20);
     public Vector2 PigsSpawnHeight = new Vector2(0.5f, 1.5f);
     public Vector2Int GrassCount = new Vector2Int(50, 100);
-    public Vector2 GrassSpawnHeight = new Vector2(0, 0.5f);
+    public int GrassReproductionSteps = 10;
     public float PlanetRadius = 50f;
-    public float HorizontalDrag = 0.8f;
+    public float HorizontalDrag = 100f;
     public float GravityForce = 9.81f;
 
     // Actions section
@@ -31,10 +31,9 @@ public class SimulationConfigAsset : ScriptableObject
 
     // Advertisers section
     [Header("Grass Advertiser")]
-    public Vector2 grassFullnessWholeness = new Vector2(0.5f, 1f);
-    public Vector2 grassNutrition = new Vector2(10f, 30f);
     public Vector2 grassSizeMax = new Vector2(0.5f, 1.5f);
-    public Vector2 energyComfortFactor = new Vector2(1f, 2f);
+    public Vector2 grassFullnessAdvertised = new Vector2(-0.1f, 1f);
+    public Vector2 grassEnergyAdvertised = new Vector2(0.1f, -1f);
 
     // Actors constants section
     [Header("Pig Constants")]
@@ -46,13 +45,22 @@ public class SimulationConfigAsset : ScriptableObject
 
     // Entities constants section
     [Header("Grass Constants")]
-    public Vector2 grassSize = new Vector2(0.2f, 0.5f);
-    public Vector2 grassWholeness = new Vector2(0.8f, 1f);
+    public Vector2 grassSize = new Vector2(0.2f, 1f);
+    public Vector2 grassWholenessMin = new Vector2(1f, 100f);
+    public Vector2 grassWholenessMax = new Vector2(1f, 100f);
     public Vector2 grassStatNutrition = new Vector2(5f, 15f);
+    public Vector2 grassGrowthSpeed = new Vector2(5f, 15f);
+    public Vector2 grassAgingSpan = new Vector2(5f, 15f);
+    public Vector2 grassAgingFunctionHeight = new Vector2(0.02f, 1f);
+    public Vector2 grassReproductionInterval = new Vector2(0.5f, 4f);
+    public Vector2 grassReproductionSpan = new Vector2(5f, 15f);
+    public Vector2 grassReproductionFunctionHeight = new Vector2(0.02f, 1f);
+    public Vector2 grassReproductionChance = new Vector2(0.7f, 1f);
 
     [Header("Animation data - Pigs")]
     public float PigSleepingTime = 1;
     public float PigDyingTime = 1;
+    public float PigComposingTime = 3;
 
     // Convert to SimulationSettings struct
     public SimulationSettings ToSimulationSettings(in PrefabsLibraryComponent library)
@@ -62,8 +70,8 @@ public class SimulationConfigAsset : ScriptableObject
             // Needs
             Needs = new PigsNeedsData
             {
-                HungerDecayFactor = new TuningParameter { Value = HungerDecayFactor },
-                EnergyDecayFactor = new TuningParameter { Value = EnergyDecayFactor }
+                HungerDecayFactor = HungerDecayFactor,
+                EnergyDecayFactor = EnergyDecayFactor
             },
 
             // World
@@ -79,8 +87,8 @@ public class SimulationConfigAsset : ScriptableObject
                 {
                     Prefab = library.Grass,
                     Count = new int2(GrassCount.x, GrassCount.y),
-                    SpawnHeight = new float2(GrassSpawnHeight.x, GrassSpawnHeight.y)
                 },
+                GrassReproductionSteps = GrassReproductionSteps,
                 PlanetRadius = PlanetRadius,
                 HorizontalDrag = HorizontalDrag,
                 GravityForce = GravityForce
@@ -103,10 +111,9 @@ public class SimulationConfigAsset : ScriptableObject
             {
                 Grass = new GrassAdvertiserData
                 {
-                    FullnessWholeness = new float2(grassFullnessWholeness.x, grassFullnessWholeness.y),
-                    Nutrition = new float2(grassNutrition.x, grassNutrition.y),
-                    SizeMax = new float2(grassSizeMax.x, grassSizeMax.y),
-                    EnergyComfortFactor = new float2(energyComfortFactor.x, energyComfortFactor.y)
+                    SizeMax = grassSizeMax,
+                    EnergyValue = grassEnergyAdvertised,
+                    FullnessValue = grassFullnessAdvertised
                 }
             },
 
@@ -136,9 +143,17 @@ public class SimulationConfigAsset : ScriptableObject
                     FoodType = FoodType.Grass,
                     Stats = new GrassStatsData
                     {
-                        Size = new float2(grassSize.x, grassSize.y),
-                        Wholeness = new float2(grassWholeness.x, grassWholeness.y),
-                        Nutrition = new float2(grassStatNutrition.x, grassStatNutrition.y)
+                        Size = grassSize,
+                        MinWholeness = grassWholenessMin,
+                        MaxWholeness = grassWholenessMax,
+                        Nutrition = grassStatNutrition,
+                        GrowthSpeed = grassGrowthSpeed,
+                        AgingFunctionHeight = grassAgingFunctionHeight,
+                        AgingFunctionSpan = grassAgingSpan,
+                        ReproductionHeight = grassReproductionFunctionHeight,
+                        ReproductionInterval = grassReproductionInterval,
+                        ReproductionSpan = grassReproductionSpan,
+                        ReproductionChance = grassReproductionChance,
                     }
                 }
             },
@@ -147,6 +162,7 @@ public class SimulationConfigAsset : ScriptableObject
             {
                 PigData = new AnimationData.Pig
                 {
+                    ComposingTime = PigComposingTime,
                     DyingTime = PigDyingTime
                 }
             }

@@ -32,8 +32,8 @@ public struct SimulationSettings
 [System.Serializable]
 public struct PigsNeedsData
 {
-    public TuningParameter HungerDecayFactor;
-    public TuningParameter EnergyDecayFactor;
+    public float2 HungerDecayFactor;
+    public float2 EnergyDecayFactor;
 }
 
 // World section
@@ -42,6 +42,7 @@ public struct WorldData
 {
     public SpawnData PigsSpawn;
     public SpawnData GrassSpawn;
+    public int GrassReproductionSteps;
     public float PlanetRadius;
     public float HorizontalDrag;
     public float GravityForce;
@@ -75,13 +76,6 @@ public struct ObjectsData
     public GrassData Grass;
 }
 
-// Tuning parameter (float with min/max range)
-[System.Serializable]
-public struct TuningParameter
-{
-    public float2 Value; // x = min, y = max
-}
-
 // Spawn data structure
 [System.Serializable]
 public struct SpawnData
@@ -105,10 +99,10 @@ public struct PigsActionsData
 [System.Serializable]
 public struct GrassAdvertiserData
 {
-    public float2 FullnessWholeness;
+    public float2 FullnessValue;
     public float2 Nutrition;
     public float2 SizeMax;
-    public float2 EnergyComfortFactor;
+    public float2 EnergyValue;
 }
 
 // Pigs Constants Data
@@ -144,8 +138,16 @@ public struct GrassData
 public struct GrassStatsData
 {
     public float2 Size;
-    public float2 Wholeness;
+    public float2 MinWholeness;
+    public float2 MaxWholeness;
     public float2 Nutrition;
+    public float2 GrowthSpeed;
+    public float2 AgingFunctionSpan;
+    public float2 AgingFunctionHeight;
+    public float2 ReproductionSpan;
+    public float2 ReproductionHeight;
+    public float2 ReproductionInterval;
+    public float2 ReproductionChance;
 }
 
 // AnimationData
@@ -156,6 +158,7 @@ public struct AnimationData
 
     public struct Pig
     {
+        public float ComposingTime;
         public float DyingTime;
     }
 }

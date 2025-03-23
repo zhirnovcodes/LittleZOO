@@ -96,12 +96,7 @@ public partial struct SearchingActionSystem : ISystem
             if (needs.Fullness <= 0)
             {
                 UnityEngine.Debug.Log("Die");
-                Ecb.DestroyEntity(entity);
-                return;
-            }
-
-            if (needsOutput.Advertiser == Entity.Null)
-            {
+                Die(entity);
                 return;
             }
 
@@ -109,15 +104,30 @@ public partial struct SearchingActionSystem : ISystem
             {
                 case ActionID.Eat:
                     Ecb.SetComponentEnabled<EatingStateTag>(entity, true);
+                    Ecb.SetComponentEnabled<SearchingStateTag>(entity, false);
                     Ecb.SetIdleAnimation(ReferenceLookup.GetView(entity));
                     break;
                 case ActionID.Sleep:
                     Ecb.SetComponentEnabled<SleepingStateTag>(entity, true);
+                    Ecb.SetComponentEnabled<SearchingStateTag>(entity, false);
                     Ecb.SetIdleAnimation(ReferenceLookup.GetView(entity));
                     break;
             }
+        }
 
+        private void Die(Entity entity)
+        {
+            var viewEntity = ReferenceLookup.GetView(entity);
+
+            Ecb.SetComponentEnabled<DyingStateTag>(entity, true);
+            Ecb.SetComponentEnabled<MoveToTargetInputComponent>(entity, false);
             Ecb.SetComponentEnabled<SearchingStateTag>(entity, false);
+            Ecb.SetComponentEnabled<ActorNeedsComponent>(entity, false);
+            Ecb.SetComponentEnabled<VisionComponent>(entity, false);
+            Ecb.SetComponent(entity, new StateTimeComponent{ StateTimeElapsed = 0 });
+
+            Ecb.SetDyingAnimation(viewEntity);
+
         }
     }
 

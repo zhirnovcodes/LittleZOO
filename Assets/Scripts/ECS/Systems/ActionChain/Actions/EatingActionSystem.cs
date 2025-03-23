@@ -11,7 +11,7 @@ public partial struct EatingActionSystem : ISystem
     // OnCreate is called when the system is created
     public void OnCreate(ref SystemState state)
     {
-        // Require these components for the system to run
+        state.RequireForUpdate<SimulationConfigComponent>();
     }
 
     // OnDestroy is called when the system is destroyed
@@ -32,6 +32,7 @@ public partial struct EatingActionSystem : ISystem
         var transformLookup = SystemAPI.GetComponentLookup<LocalTransform>();
         var edibleLookup = SystemAPI.GetComponentLookup<EdibleComponent>();
         var referenceLookup = SystemAPI.GetBufferLookup<Child>();
+        var config = SystemAPI.GetSingleton<SimulationConfigComponent>();
 
         // TODO from blob
         var entity = SystemAPI.GetSingletonEntity<ActorsSpawnComponent>();
@@ -46,7 +47,9 @@ public partial struct EatingActionSystem : ISystem
             Ecb = ecb,
             DeltaTime = deltaTime,
             WalkingSpeed = walkingSpeed,
-            ReferenceLookup = referenceLookup
+            ReferenceLookup = referenceLookup,
+            BiteInterval = config.BlobReference.Value.Actions.Pigs.EatInterval,
+            BiteWholeness = config.BlobReference.Value.Actions.Pigs.BiteWholeness
         }.Schedule(state.Dependency);
 
         state.Dependency.Complete();
@@ -66,9 +69,8 @@ public partial struct EatingActionSystem : ISystem
         public float WalkingSpeed;
         public float DeltaTime;
 
-        // TODO to blob
-        const float eatDeltaTime = 1f;
-        const float biteWholeness = 10f;
+        public float2 BiteWholeness;
+        public float2 BiteInterval;
 
         [BurstCompile]
         private void Execute
@@ -77,6 +79,7 @@ public partial struct EatingActionSystem : ISystem
             ref MoveToTargetInputComponent moveInput,
             ref EatingStateTag eatingTag,
             ref ActorNeedsComponent needs,
+            ref ActorRandomComponent random,
             in MoveToTargetOutputComponent moveOutput,
             in NeedBasedSystemOutput needOutput
         )
@@ -111,6 +114,10 @@ public partial struct EatingActionSystem : ISystem
 
             var hasArrived = moveOutput.HasArivedToTarget;
 
+            // TODO to DNA
+            var eatDeltaTime = random.Random.NextFloat(BiteInterval.x, BiteInterval.y);
+            var biteWholeness = random.Random.NextFloat(BiteWholeness.x, BiteWholeness.y);
+
             if (hasArrived)
             {
                 moveInput.Speed = 0;
@@ -120,7 +127,7 @@ public partial struct EatingActionSystem : ISystem
                 if (eatingTag.BiteTimeElapsed >= eatDeltaTime)
                 {
                     eatingTag.BiteTimeElapsed = 0;
-                    Bite(ref needs, target);
+                    Bite(ref needs, target, biteWholeness);
 
                     if (edable.Wholeness <= 0)
                     {
@@ -137,19 +144,19 @@ public partial struct EatingActionSystem : ISystem
             if (needs.Fullness <= 0)
             {
                 UnityEngine.Debug.Log("Die");
-                Ecb.DestroyEntity(entity);
+                Die(entity);
                 return;
             }
 
             eatingTag.BiteTimeElapsed = 0;
         }
 
-        private void Bite(ref ActorNeedsComponent needs, Entity target)
+        private void Bite(ref ActorNeedsComponent needs, Entity target, float wholeness)
         {// TODO from advertiser
             var edibleComponent = EdibleLookup.GetRefRW(target);
 
             var oldWholeness = edibleComponent.ValueRO.Wholeness;
-            var biteValue = math.min(biteWholeness, oldWholeness);
+            var biteValue = math.min(wholeness, oldWholeness);
 
             var nutritiousAll = edibleComponent.ValueRO.Nutrition;
 
@@ -163,6 +170,21 @@ public partial struct EatingActionSystem : ISystem
         {
             Ecb.SetComponentEnabled<SearchingStateTag>(entity, true);
             Ecb.SetComponentEnabled<EatingStateTag>(entity, false);
+        }
+
+        private void Die(Entity entity)
+        {
+            var viewEntity = ReferenceLookup.GetView(entity);
+
+            Ecb.SetComponentEnabled<DyingStateTag>(entity, true);
+            Ecb.SetComponentEnabled<MoveToTargetInputComponent>(entity, false);
+            Ecb.SetComponentEnabled<EatingStateTag>(entity, false);
+            Ecb.SetComponentEnabled<ActorNeedsComponent>(entity, false);
+            Ecb.SetComponentEnabled<StateTimeComponent>(entity, false);
+            Ecb.SetComponentEnabled<VisionComponent>(entity, false);
+
+            Ecb.SetDyingAnimation(viewEntity);
+
         }
     }
 }
