@@ -1,9 +1,7 @@
 using Unity.Burst;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
-using Zoo.Physics;
 
 [BurstCompile]
 [UpdateInGroup(typeof(InitializationSystemGroup))]
@@ -12,7 +10,6 @@ public partial struct PigsSpawnSystem : ISystem
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        state.RequireForUpdate<ActorsSpawnComponent>();
         state.RequireForUpdate<SimulationConfigComponent>();
         state.RequireForUpdate<PlanetComponent>();
     }
@@ -27,9 +24,8 @@ public partial struct PigsSpawnSystem : ISystem
     {
         state.Enabled = false;
         
-        var entity = SystemAPI.GetSingletonEntity<ActorsSpawnComponent>();
+        var entity = SystemAPI.GetSingletonEntity<ActorsSpawnRandomComponent>();
         var config = SystemAPI.GetSingleton<SimulationConfigComponent>();
-        var spawnData = SystemAPI.GetComponentRO<ActorsSpawnComponent>(entity);
         var randomData = SystemAPI.GetComponentRW<ActorsSpawnRandomComponent>(entity);
 
         var commandBuffer = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
@@ -39,10 +35,15 @@ public partial struct PigsSpawnSystem : ISystem
         var planetCenter = planetTransform.ValueRO.Position;
         var planetScale = planetTransform.ValueRO.Scale;
 
-        for (int i = 0; i < spawnData.ValueRO.PigsCount; i++)
+        var pigsCountVar = config.BlobReference.Value.World.PigsSpawn.Count;
+        var pigsCount = MathExtentions.GetRandomVariation(ref randomData.ValueRW.Random, pigsCountVar);
+
+        var pigsHeightVar = config.BlobReference.Value.World.PigsSpawn.SpawnHeight;
+
+        for (int i = 0; i < pigsCount; i++)
         {
-            var newPosition = GetRandomPosition(planetCenter, planetScale, 1, randomData, spawnData);
-            var newRotation = GetRandomRotation(randomData, spawnData, newPosition);
+            var newPosition = GetRandomPosition(planetCenter, planetScale, 1, randomData, pigsHeightVar);
+            var newRotation = GetRandomRotation();
 
             PigsFactory.SpawnPig(newPosition, newRotation, commandBuffer, randomData, ref config.BlobReference.Value);
         }
@@ -50,12 +51,12 @@ public partial struct PigsSpawnSystem : ISystem
         commandBuffer.Playback(state.EntityManager);
     }
 
-    private quaternion GetRandomRotation(RefRW<ActorsSpawnRandomComponent> random, RefRO<ActorsSpawnComponent> spawnData, float3 spawnPosit) 
+    private quaternion GetRandomRotation() 
     {
         return quaternion.identity;
     }
 
-    private float3 GetRandomPosition(float3 centerPosition, float planetScale, float pigScale, RefRW<ActorsSpawnRandomComponent> random, RefRO<ActorsSpawnComponent> spawnData)
+    private float3 GetRandomPosition(float3 centerPosition, float planetScale, float pigScale, RefRW<ActorsSpawnRandomComponent> random, float2 spawnHeight)
     {
         var randomDirection = new float3(0, 0, 0);
         while (math.distancesq(randomDirection, new float3(0,0,0)) <= 0)
@@ -64,8 +65,8 @@ public partial struct PigsSpawnSystem : ISystem
         }
 
         var planetOffset = planetScale / 2f + pigScale / 2f;
-        var minOffset = planetOffset + spawnData.ValueRO.SpawnHeightMin;
-        var maxOffset = planetOffset + spawnData.ValueRO.SpawnHeightMax;
+        var minOffset = planetOffset + spawnHeight.x;
+        var maxOffset = planetOffset + spawnHeight.y;
 
         var randomHeight = random.ValueRW.Random.NextFloat(minOffset, maxOffset);
         var position = math.normalize(randomDirection) * randomHeight + centerPosition;

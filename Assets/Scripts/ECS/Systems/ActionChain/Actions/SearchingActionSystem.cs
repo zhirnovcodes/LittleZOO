@@ -102,12 +102,12 @@ public partial struct SearchingActionSystem : ISystem
 
             switch (needsOutput.Action)
             {
-                case ActionID.Eat:
+                case ActionTypes.Eat:
                     Ecb.SetComponentEnabled<EatingStateTag>(entity, true);
                     Ecb.SetComponentEnabled<SearchingStateTag>(entity, false);
                     Ecb.SetIdleAnimation(ReferenceLookup.GetView(entity));
                     break;
-                case ActionID.Sleep:
+                case ActionTypes.Sleep:
                     Ecb.SetComponentEnabled<SleepingStateTag>(entity, true);
                     Ecb.SetComponentEnabled<SearchingStateTag>(entity, false);
                     Ecb.SetIdleAnimation(ReferenceLookup.GetView(entity));

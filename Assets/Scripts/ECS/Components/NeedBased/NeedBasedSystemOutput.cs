@@ -3,6 +3,6 @@ using Zoo.Enums;
 
 public struct NeedBasedSystemOutput : IComponentData
 {
-    public ActionID Action;
+    public ActionTypes Action;
     public Entity Advertiser;
 }

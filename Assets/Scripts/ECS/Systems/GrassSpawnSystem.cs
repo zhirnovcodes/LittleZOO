@@ -13,7 +13,6 @@ public partial struct GrassSpawnSystem : ISystem
     public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<IcosphereComponent>();
-        state.RequireForUpdate<ActorsSpawnComponent>();
         state.RequireForUpdate<SimulationConfigComponent>();
         state.RequireForUpdate<ActorsSpawnRandomComponent>();
         m_Initialized = false;

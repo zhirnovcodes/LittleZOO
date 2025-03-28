@@ -6,6 +6,6 @@ using Zoo.Enums;
 public struct AdvertisedActionItem : IBufferElementData
 {
     public NeedType NeedId;
-    public ActionID ActionId;
+    public ActionTypes ActionId;
     public float2 NeedsMatrix; // X: Fullness, Y: Energy
 }

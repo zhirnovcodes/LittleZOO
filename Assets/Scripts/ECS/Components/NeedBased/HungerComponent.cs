@@ -2,6 +2,10 @@ using Unity.Entities;
 
 public struct HungerComponent : IComponentData, IEnableableComponent
 {
-    public Entity Target;
-    public float HungerIncrease;
+    public float FullnessDecaySpeed;
+}
+
+public struct EnergyComponent : IComponentData, IEnableableComponent
+{
+    public float EnergyDecayFactor;
 }

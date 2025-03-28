@@ -73,7 +73,7 @@ public partial struct SleepingActionSystem : ISystem
 
             if (sleepingTag.IsSleeping)
             {
-                if (needOutput.Action == ActionID.Sleep == false)
+                if (needOutput.Action == ActionTypes.Sleep == false)
                 {
                     WakeUp(entity, ref sleepingTag);
                     return;
@@ -122,7 +122,7 @@ public partial struct SleepingActionSystem : ISystem
 
             foreach (var item in buffer)
             {
-                if (item.ActionId == ActionID.Sleep)
+                if (item.ActionId == ActionTypes.Sleep)
                 {
                     foundEnergy = item.NeedsMatrix[(int)NeedType.Energy];
                     break;

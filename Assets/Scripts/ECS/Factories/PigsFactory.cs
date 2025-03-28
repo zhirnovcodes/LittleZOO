@@ -18,6 +18,34 @@ public static class PigsFactory
         commandBuffer.AddComponent(newPig, new GravityComponent());
         commandBuffer.AddComponent(newPig, new ActorRandomComponent { Random = Random.CreateFromIndex(random.ValueRW.Random.NextUInt()) });
 
+        // Needs
+        var hungerDecayFator = MathExtentions.GetRandomVariation(ref random.ValueRW.Random, settings.Needs.HungerDecayFactor);
+        var energyDecayFator = MathExtentions.GetRandomVariation(ref random.ValueRW.Random, settings.Needs.EnergyDecayFactor);
+        var fullness = MathExtentions.GetRandom100(ref random.ValueRW.Random);
+        var energy = MathExtentions.GetRandom100(ref random.ValueRW.Random);
+
+        commandBuffer.AddComponent(newPig, new ActorNeedsComponent
+        {
+                Fullness = fullness,
+                Energy = energy,
+
+                // Decay functions
+                HungerDecayFactor = hungerDecayFator,
+                EnergyDecayFactor = energyDecayFator
+        });
+
+        // vision
+        var radius = MathExtentions.GetRandomVariation(ref random.ValueRW.Random, settings.Actors.Pigs.Stats.VisionRadius);
+        var interval = MathExtentions.GetRandomVariation(ref random.ValueRW.Random, settings.Actors.Pigs.Stats.VisionInterval);
+        commandBuffer.AddComponent(newPig, new VisionComponent
+        {
+            Radius = radius,
+            Interval = interval
+        });
+
+        commandBuffer.AddBuffer<VisionItem>(newPig);
+
+        // Moving
         var speed = random.ValueRW.Random.NextFloat(settings.Actors.Pigs.Stats.Speed.x, settings.Actors.Pigs.Stats.Speed.y);
 
         commandBuffer.AddComponent(newPig, new MoveToTargetInputComponent { Speed = speed });
@@ -37,5 +65,6 @@ public static class PigsFactory
 
         commandBuffer.AddComponent(newPig, new NeedBasedSystemOutput());
         commandBuffer.AddBuffer<AdvertisedActionItem>(newPig);
+
     }
 }

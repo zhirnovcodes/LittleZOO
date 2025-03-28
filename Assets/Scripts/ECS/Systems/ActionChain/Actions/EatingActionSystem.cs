@@ -84,7 +84,7 @@ public partial struct EatingActionSystem : ISystem
             in NeedBasedSystemOutput needOutput
         )
         {
-            if (needOutput.Action == ActionID.Eat == false)
+            if (needOutput.Action == ActionTypes.Eat == false)
             {
                 SetSearchingState(entity);
                 Ecb.SetIdleAnimation(ReferenceLookup.GetView(entity));

@@ -187,13 +187,13 @@ public static class GrassFactory
         ecb.AddBuffer<AdvertisedActionItem>(grassEntity);
         ecb.AppendToBuffer(grassEntity, new AdvertisedActionItem
         {
-            ActionId = Zoo.Enums.ActionID.Eat,
+            ActionId = Zoo.Enums.ActionTypes.Eat,
             NeedId = Zoo.Enums.NeedType.Fullness,
             NeedsMatrix = dna.AdvertisedFullness
         });
         ecb.AppendToBuffer(grassEntity, new AdvertisedActionItem
         {
-            ActionId = Zoo.Enums.ActionID.Sleep,
+            ActionId = Zoo.Enums.ActionTypes.Sleep,
             NeedId = Zoo.Enums.NeedType.Energy,
             NeedsMatrix = dna.AdvertisedEnergy
         });

@@ -54,7 +54,7 @@ public partial struct NeedBasedDecisionSystem : ISystem
         {
             float maxSum = float.MinValue;
             Entity bestAdvertiser = Entity.Null;
-            ActionID bestAction = default;
+            ActionTypes bestAction = default;
 
             foreach (var visibleEntity in visibleEntities)
             {
@@ -86,7 +86,7 @@ public partial struct NeedBasedDecisionSystem : ISystem
             {
                 Ecb.SetComponent(sortKey, entity, new NeedBasedSystemOutput
                 {
-                    Action = ActionID.Search,
+                    Action = ActionTypes.Search,
                     Advertiser = Entity.Null
                 });
                 return;
