@@ -1,7 +1,7 @@
 using Unity.Entities;
 using Unity.Mathematics;
 
-public struct ActorsSpawnRandomComponent : IComponentData
+public struct SimulationRandomComponent : IComponentData
 {
     public Random Random;
 }

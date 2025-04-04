@@ -1,6 +1,7 @@
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using UnityEngine;
 
 // Main BLOB asset structure
 [System.Serializable]
@@ -32,8 +33,10 @@ public struct SimulationSettings
 [System.Serializable]
 public struct PigsNeedsData
 {
-    public float2 HungerDecayFactor;
-    public float2 EnergyDecayFactor;
+    public float2 FullnessNaturalDecay;
+    public float2 EnergyNaturalDecay;
+    public float2 FullnessDecayByDistance;
+    public float2 EnergyDecayByDistance;
 }
 
 // World section
@@ -99,10 +102,12 @@ public struct PigsActionsData
 [System.Serializable]
 public struct GrassAdvertiserData
 {
-    public float2 FullnessValue;
     public float2 Nutrition;
     public float2 SizeMax;
-    public float2 EnergyValue;
+    public float2 FullnessValueMin;
+    public float2 FullnessValueMax;
+    public float2 EnergyValueMin;
+    public float2 EnergyValueMax;
 }
 
 // Pigs Constants Data
@@ -119,7 +124,8 @@ public struct PigsData
 [System.Serializable]
 public struct PigsStatsData
 {
-    public float2 Speed;
+    public float2 SpeedMin;
+    public float2 SpeedMax;
     public float2 Size;
     public float2 VisionInterval;
     public float2 VisionRadius;
@@ -167,5 +173,83 @@ public struct AnimationData
 
 // Enum definitions
 public enum ObjectType { None, Pig, Grass }
-public enum ActorsType { None, Pig }
+public enum ActorsType { None, Pig, Wolf }
 public enum FoodType { None, Grass }
+
+
+// Component to store the BLOB reference
+public struct SimulationConfigComponent : IComponentData
+{
+    public BlobAssetReference<SimulationSettings> BlobReference;
+}
+
+// Example system that uses the BLOB
+[UpdateInGroup(typeof(InitializationSystemGroup))]
+public partial class SimulationInitSystem : SystemBase
+{
+    public BlobAssetReference<SimulationSettings> SimulationBlob { get; private set; }
+
+    protected override void OnCreate()
+    {
+        base.OnCreate();
+
+
+        RequireForUpdate(GetEntityQuery(ComponentType.ReadOnly<PrefabsLibraryComponent>()));
+    }
+
+    protected override void OnUpdate()
+    {
+        // Disable this system as it's only needed once
+        Enabled = false;
+
+        // Get the config from resources
+        var configAsset = Resources.Load<SimulationConfigAsset>("Config/SimulationConfig");
+        if (configAsset == null)
+        {
+            Debug.LogError("SimulationConfig asset not found in Resources folder");
+            return;
+        }
+
+        var library = SystemAPI.GetSingleton<PrefabsLibraryComponent>();
+
+        // Convert ScriptableObject to SimulationSettings struct
+        var settings = configAsset.ToSimulationSettings(library);
+
+        // Create the BLOB asset
+        SimulationBlob = CreateSimulationBlob(settings);
+
+        // Store BLOB reference in the config component for other systems to access
+        var configEntity = SystemAPI.GetSingletonEntity<PrefabsLibraryComponent>();
+        EntityManager.AddComponentData(configEntity,
+            new SimulationConfigComponent { BlobReference = SimulationBlob });
+
+        // Log success
+        Debug.Log("Simulation configuration BLOB created successfully");
+    }
+
+    protected override void OnDestroy()
+    {
+        // Clean up the BLOB asset when the system is destroyed
+        if (SimulationBlob.IsCreated)
+        {
+            SimulationBlob.Dispose();
+        }
+
+        base.OnDestroy();
+    }
+
+    private static BlobAssetReference<SimulationSettings> CreateSimulationBlob(SimulationSettings settings)
+    {
+        var builder = new BlobBuilder(Allocator.Temp);
+        ref var root = ref builder.ConstructRoot<SimulationSettings>();
+
+        // Copy all data from settings to blob
+        root = settings;
+
+        // Create the blob asset
+        var blobAsset = builder.CreateBlobAssetReference<SimulationSettings>(Allocator.Persistent);
+        builder.Dispose();
+
+        return blobAsset;
+    }
+}

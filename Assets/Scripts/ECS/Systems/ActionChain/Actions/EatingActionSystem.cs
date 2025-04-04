@@ -23,6 +23,7 @@ public partial struct EatingActionSystem : ISystem
     // OnUpdate is called every frame the system runs
     public void OnUpdate(ref SystemState state)
     {
+        return;
         var deltaTime = SystemAPI.Time.DeltaTime;
 
         // Create command buffer for structural changes
@@ -76,11 +77,11 @@ public partial struct EatingActionSystem : ISystem
         private void Execute
         (
             Entity entity,
-            ref MoveToTargetInputComponent moveInput,
+            ref MovingInputComponent moveInput,
             ref EatingStateTag eatingTag,
             ref ActorNeedsComponent needs,
             ref ActorRandomComponent random,
-            in MoveToTargetOutputComponent moveOutput,
+            in MovingOutputComponent moveOutput,
             in NeedBasedSystemOutput needOutput
         )
         {
@@ -138,8 +139,8 @@ public partial struct EatingActionSystem : ISystem
                 return;
             }
 
-            needs.Energy -= DeltaTime * needs.EnergyDecayFactor;
-            needs.Fullness -= DeltaTime * needs.HungerDecayFactor;
+            //needs.Energy -= DeltaTime * needs.EnergyDecayFactor;
+            //needs.Fullness -= DeltaTime * needs.HungerDecayFactor;
 
             if (needs.Fullness <= 0)
             {
@@ -177,9 +178,9 @@ public partial struct EatingActionSystem : ISystem
             var viewEntity = ReferenceLookup.GetView(entity);
 
             Ecb.SetComponentEnabled<DyingStateTag>(entity, true);
-            Ecb.SetComponentEnabled<MoveToTargetInputComponent>(entity, false);
+            Ecb.SetComponentEnabled<MovingInputComponent>(entity, false);
             Ecb.SetComponentEnabled<EatingStateTag>(entity, false);
-            Ecb.SetComponentEnabled<ActorNeedsComponent>(entity, false);
+            Ecb.SetComponentEnabled<NeedBasedDecisionTag>(entity, false);
             Ecb.SetComponentEnabled<StateTimeComponent>(entity, false);
             Ecb.SetComponentEnabled<VisionComponent>(entity, false);
 

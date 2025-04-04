@@ -24,7 +24,7 @@ public static class MathExtentions
         return random.NextInt(valueRange.x, valueRange.y);
     }
 
-    public static float2 GetRandomVariation(ref Random random, float2 oldValue, float2 deviation)
+    public static float2 GetRandomVariationWithDeviation(ref Random random, float2 oldValue, float2 deviation)
     {
         return random.NextFloat(deviation.x, deviation.y) * oldValue;
     }
@@ -34,8 +34,10 @@ public static class MathExtentions
         return random.NextFloat(minMax.x, minMax.y);
     }
 
-    public static float2 GetRandomVariation(ref Random random, float4 minMax)
+    public static float2 GetRandomVariation(ref Random random, float2 min, float2 max)
     {
-        return new float2(random.NextFloat(minMax.x, minMax.z), random.NextFloat(minMax.y, minMax.w));
+        var x = random.NextFloat(min.x, min.y);
+        var y = random.NextFloat(max.x, max.y);
+        return new float2(math.min(x, y), math.max(x, y));
     }
 }

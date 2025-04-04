@@ -25,7 +25,7 @@ namespace Zoo.Physics
             var config = SystemAPI.GetSingleton<SimulationConfigComponent>();
             var drag = config.BlobReference.Value.World.HorizontalDrag;
 
-            var gravityJob = new GravityJob
+            var gravityJob = new FrictionJob
             {
                 DeltaTime = deltaTime,
                 HorizontalDrag = drag
@@ -35,7 +35,7 @@ namespace Zoo.Physics
         }
 
         [BurstCompile]
-        public partial struct GravityJob : IJobEntity
+        public partial struct FrictionJob : IJobEntity
         {
             public float DeltaTime;
             public float HorizontalDrag;
@@ -51,7 +51,7 @@ namespace Zoo.Physics
                 float3 horizontalVelocity = velocity.Linear - verticalVelocity;
 
                 // Apply horizontal drag
-                horizontalVelocity = math.lerp(horizontalVelocity, float3.zero, math.clamp(HorizontalDrag * DeltaTime, 0, 1));
+                horizontalVelocity = math.lerp(horizontalVelocity, float3.zero, math.clamp(HorizontalDrag, 0, 1));
                 velocity.Linear = horizontalVelocity + verticalVelocity;
             }
         }

@@ -14,7 +14,7 @@ public partial struct GrassSpawnSystem : ISystem
     {
         state.RequireForUpdate<IcosphereComponent>();
         state.RequireForUpdate<SimulationConfigComponent>();
-        state.RequireForUpdate<ActorsSpawnRandomComponent>();
+        state.RequireForUpdate<SimulationRandomComponent>();
         m_Initialized = false;
     }
 
@@ -48,13 +48,14 @@ public partial struct GrassSpawnSystem : ISystem
         // Create a NativeArray to track which triangles are occupied
         NativeArray<bool> occupiedTriangles = new NativeArray<bool>(triangleCount, Allocator.Temp);
 
-        var entity = SystemAPI.GetSingletonEntity<ActorsSpawnComponent>();
-        var spawnData = SystemAPI.GetComponentRO<ActorsSpawnComponent>(entity);
+        //var entity = SystemAPI.GetSingletonEntity<ActorsSpawnComponent>();
+        //var spawnData = SystemAPI.GetComponentRO<ActorsSpawnComponent>(entity);
 
         // Create a random number generator with a fixed seed
-        var random = SystemAPI.GetSingleton<ActorsSpawnRandomComponent>();
+        var random = SystemAPI.GetSingleton<SimulationRandomComponent>();
         var config = SystemAPI.GetSingleton<SimulationConfigComponent>();
         var grassCount = random.Random.NextInt(config.BlobReference.Value.World.GrassSpawn.Count.x, config.BlobReference.Value.World.GrassSpawn.Count.y);
+        var prefab = config.BlobReference.Value.World.GrassSpawn.Prefab;
 
         // Spawn initial grass entities
         for (int i = 0; i < grassCount; i++)
@@ -71,11 +72,11 @@ public partial struct GrassSpawnSystem : ISystem
             occupiedTriangles[triangleIndex] = true;
 
             // Create a new grass entity
-            GrassFactory.CreateRandomGrass(ecb, triangleIndex, ref random.Random, in icosphere, spawnData.ValueRO.GrassPrefab, in config);
+            GrassFactory.CreateRandomGrass(ecb, triangleIndex, ref random.Random, in icosphere, prefab, in config);
         }
 
         // Simulate grass spread across the planet
-        SimulateGrassSpread(ecb, occupiedTriangles, ref random.Random, triangleCount, icosphere, spawnData, in config);
+        SimulateGrassSpread(ecb, occupiedTriangles, ref random.Random, triangleCount, icosphere, prefab, in config);
 
         // Cleanup
         occupiedTriangles.Dispose();
@@ -84,7 +85,7 @@ public partial struct GrassSpawnSystem : ISystem
     private void SimulateGrassSpread(EntityCommandBuffer ecb, NativeArray<bool> occupiedTriangles,
                                      ref Random random, int triangleCount,
                                      in IcosphereComponent icosphere,
-                                     RefRO< ActorsSpawnComponent> spawnData,
+                                     Entity prefab,
                                      in SimulationConfigComponent config)
     {
         var reproductionChance = random.NextFloat( config.BlobReference.Value.Entities.Grass.Stats.ReproductionChance.x, 
@@ -135,7 +136,7 @@ public partial struct GrassSpawnSystem : ISystem
                 occupiedTriangles[triangleId] = true;
 
                 // Create a new grass entity
-                GrassFactory.CreateRandomGrass(ecb, triangleId, ref random, icosphere, spawnData.ValueRO.GrassPrefab, in config);
+                GrassFactory.CreateRandomGrass(ecb, triangleId, ref random, icosphere, prefab, in config);
             }
 
             newTriangles.Dispose();

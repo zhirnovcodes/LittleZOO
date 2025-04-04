@@ -7,10 +7,6 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "SimulationConfig", menuName = "Simulation/Config")]
 public class SimulationConfigAsset : ScriptableObject
 {
-    // Needs section
-    [Header("Pigs Needs")]
-    public Vector2 HungerDecayFactor = new Vector2(0.01f, 0.05f);
-    public Vector2 EnergyDecayFactor = new Vector2(0.005f, 0.02f);
 
     // World section
     [Header("World Settings")]
@@ -18,6 +14,9 @@ public class SimulationConfigAsset : ScriptableObject
     public Vector2 PigsSpawnHeight = new Vector2(0.5f, 1.5f);
     public Vector2Int GrassCount = new Vector2Int(50, 100);
     public int GrassReproductionSteps = 10;
+
+    // Physics section
+    [Header("Physics Settings")]
     public float PlanetRadius = 50f;
     public float HorizontalDrag = 100f;
     public float GravityForce = 9.81f;
@@ -32,13 +31,16 @@ public class SimulationConfigAsset : ScriptableObject
     // Advertisers section
     [Header("Grass Advertiser")]
     public Vector2 grassSizeMax = new Vector2(0.5f, 1.5f);
-    public Vector2 grassFullnessAdvertised = new Vector2(-0.1f, 1f);
-    public Vector2 grassEnergyAdvertised = new Vector2(0.1f, -1f);
+    public Vector2 grassFullnessAdvertisedMin = new Vector2(-0.1f, 1f);
+    public Vector2 grassFullnessAdvertisedMax = new Vector2(-0.1f, 1f);
+    public Vector2 grassEnergyAdvertisedMin = new Vector2(0.1f, -1f);
+    public Vector2 grassEnergyAdvertisedMax = new Vector2(0.1f, -1f);
 
     // Actors constants section
     [Header("Pig Constants")]
     public int foodPreference = 1;  // 1 = grass
-    public Vector2 pigSpeed = new Vector2(1f, 3f);
+    public Vector2 pigSpeedMin = new Vector2(1f, 3f);
+    public Vector2 pigSpeedMax = new Vector2(1f, 3f);
     public Vector2 pigSize = new Vector2(0.8f, 1.2f);
     public Vector2 visionInterval = new Vector2(0.2f, 0.5f);
     public Vector2 visionRadius = new Vector2(5f, 10f);
@@ -62,6 +64,13 @@ public class SimulationConfigAsset : ScriptableObject
     public float PigDyingTime = 1;
     public float PigComposingTime = 3;
 
+    // Needs section
+    [Header("Pigs Needs")]
+    public Vector2 FullnessNaturalDecay = new Vector2(0.01f, 0.05f);
+    public Vector2 EnergyNaturalDecay = new Vector2(0.005f, 0.02f);
+    public Vector2 FullnessDecayByDistance = new Vector2(0.02f, 0.1f);
+    public Vector2 EnergyDecayByDistance = new Vector2(0.01f, 0.4f);
+
     // Convert to SimulationSettings struct
     public SimulationSettings ToSimulationSettings(in PrefabsLibraryComponent library)
     {
@@ -70,8 +79,10 @@ public class SimulationConfigAsset : ScriptableObject
             // Needs
             Needs = new PigsNeedsData
             {
-                HungerDecayFactor = HungerDecayFactor,
-                EnergyDecayFactor = EnergyDecayFactor
+                FullnessNaturalDecay = FullnessNaturalDecay,
+                EnergyNaturalDecay = EnergyNaturalDecay,
+                FullnessDecayByDistance = FullnessDecayByDistance,
+                EnergyDecayByDistance = EnergyDecayByDistance
             },
 
             // World
@@ -99,8 +110,8 @@ public class SimulationConfigAsset : ScriptableObject
             {
                 Pigs = new PigsActionsData
                 {
-                    EatInterval = new float2(eatInterval.x, eatInterval.y),
-                    BiteWholeness = new float2(biteWholeness.x, biteWholeness.y),
+                    EatInterval = eatInterval,
+                    BiteWholeness = biteWholeness,
                     SearchMinValuableFullness = new float2(searchMinValuableFullness.x, searchMinValuableFullness.y),
                     MinValuableEnnergy = new float2(minValuableEnergy.x, minValuableEnergy.y)
                 }
@@ -112,8 +123,10 @@ public class SimulationConfigAsset : ScriptableObject
                 Grass = new GrassAdvertiserData
                 {
                     SizeMax = grassSizeMax,
-                    EnergyValue = grassEnergyAdvertised,
-                    FullnessValue = grassFullnessAdvertised
+                    EnergyValueMin = grassEnergyAdvertisedMin,
+                    EnergyValueMax = grassEnergyAdvertisedMax,
+                    FullnessValueMin = grassFullnessAdvertisedMin,
+                    FullnessValueMax = grassFullnessAdvertisedMax
                 }
             },
 
@@ -127,7 +140,8 @@ public class SimulationConfigAsset : ScriptableObject
                     FoodPreference = foodPreference,
                     Stats = new PigsStatsData
                     {
-                        Speed = new float2(pigSpeed.x, pigSpeed.y),
+                        SpeedMin = pigSpeedMin,
+                        SpeedMax = pigSpeedMax,
                         Size = new float2(pigSize.x, pigSize.y),
                         VisionInterval = new float2(visionInterval.x, visionInterval.y),
                         VisionRadius = new float2(visionRadius.x, visionRadius.y)
@@ -169,81 +183,4 @@ public class SimulationConfigAsset : ScriptableObject
         };
         return settings;
     }
-}
-
-// Example system that uses the BLOB
-[UpdateInGroup(typeof(InitializationSystemGroup))]
-public partial class SimulationInitSystem : SystemBase
-{
-    public BlobAssetReference<SimulationSettings> SimulationBlob { get; private set; }
-
-    protected override void OnCreate()
-    {
-        base.OnCreate();
-
-
-        RequireForUpdate(GetEntityQuery(ComponentType.ReadOnly<PrefabsLibraryComponent>()));
-    }
-
-    protected override void OnUpdate()
-    {
-        // Disable this system as it's only needed once
-        Enabled = false;
-
-        // Get the config from resources
-        var configAsset = Resources.Load<SimulationConfigAsset>("Config/SimulationConfig");
-        if (configAsset == null)
-        {
-            Debug.LogError("SimulationConfig asset not found in Resources folder");
-            return;
-        }
-
-        var library = SystemAPI.GetSingleton<PrefabsLibraryComponent>();
-
-        // Convert ScriptableObject to SimulationSettings struct
-        var settings = configAsset.ToSimulationSettings(library);
-
-        // Create the BLOB asset
-        SimulationBlob = CreateSimulationBlob(settings);
-
-        // Store BLOB reference in the config component for other systems to access
-        var configEntity = SystemAPI.GetSingletonEntity<PrefabsLibraryComponent>();
-        EntityManager.AddComponentData(configEntity,
-            new SimulationConfigComponent { BlobReference = SimulationBlob });
-
-        // Log success
-        Debug.Log("Simulation configuration BLOB created successfully");
-    }
-
-    protected override void OnDestroy()
-    {
-        // Clean up the BLOB asset when the system is destroyed
-        if (SimulationBlob.IsCreated)
-        {
-            SimulationBlob.Dispose();
-        }
-
-        base.OnDestroy();
-    }
-
-    private static BlobAssetReference<SimulationSettings> CreateSimulationBlob(SimulationSettings settings)
-    {
-        var builder = new BlobBuilder(Allocator.Temp);
-        ref var root = ref builder.ConstructRoot<SimulationSettings>();
-
-        // Copy all data from settings to blob
-        root = settings;
-
-        // Create the blob asset
-        var blobAsset = builder.CreateBlobAssetReference<SimulationSettings>(Allocator.Persistent);
-        builder.Dispose();
-
-        return blobAsset;
-    }
-}
-
-// Component to store the BLOB reference
-public struct SimulationConfigComponent : IComponentData
-{
-    public BlobAssetReference<SimulationSettings> BlobReference;
 }

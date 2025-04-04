@@ -23,6 +23,7 @@ public partial struct SearchingActionSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        return;
         var ecb = new EntityCommandBuffer(Allocator.TempJob);
         var deltaTime = SystemAPI.Time.DeltaTime;
 
@@ -74,10 +75,10 @@ public partial struct SearchingActionSystem : ISystem
         public void Execute
         (
             Entity entity,
-            ref MoveToTargetInputComponent moveInput,
+            ref MovingInputComponent moveInput,
             ref ActorRandomComponent randomComponent,
             ref ActorNeedsComponent needs,
-            in MoveToTargetOutputComponent moveOutput,
+            in MovingOutputComponent moveOutput,
             in NeedBasedSystemOutput needsOutput,
             in SearchingStateTag tag
         )
@@ -89,9 +90,6 @@ public partial struct SearchingActionSystem : ISystem
                 moveInput.Speed = WalkingSpeed;
 
             }
-
-            needs.Energy -= DeltaTime * needs.EnergyDecayFactor;
-            needs.Fullness -= DeltaTime * needs.HungerDecayFactor;
 
             if (needs.Fullness <= 0)
             {
@@ -120,9 +118,9 @@ public partial struct SearchingActionSystem : ISystem
             var viewEntity = ReferenceLookup.GetView(entity);
 
             Ecb.SetComponentEnabled<DyingStateTag>(entity, true);
-            Ecb.SetComponentEnabled<MoveToTargetInputComponent>(entity, false);
+            Ecb.SetComponentEnabled<MovingInputComponent>(entity, false);
             Ecb.SetComponentEnabled<SearchingStateTag>(entity, false);
-            Ecb.SetComponentEnabled<ActorNeedsComponent>(entity, false);
+            Ecb.SetComponentEnabled<NeedBasedDecisionTag>(entity, false);
             Ecb.SetComponentEnabled<VisionComponent>(entity, false);
             Ecb.SetComponent(entity, new StateTimeComponent{ StateTimeElapsed = 0 });
 

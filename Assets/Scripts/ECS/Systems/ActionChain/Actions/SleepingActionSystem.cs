@@ -8,6 +8,7 @@ public partial struct SleepingActionSystem : ISystem
 {
     private void OnUpdate(ref SystemState state)
     {
+        return;
         var deltaTime = SystemAPI.Time.DeltaTime;
 
         // Create command buffer for structural changes
@@ -55,10 +56,10 @@ public partial struct SleepingActionSystem : ISystem
         private void Execute
         (
             Entity entity,
-            ref MoveToTargetInputComponent moveInput,
+            ref MovingInputComponent moveInput,
             ref ActorNeedsComponent needs,
-            ref SleepingStateTag sleepingTag,
-            in MoveToTargetOutputComponent moveOutput,
+            in SleepingStateTag sleepingTag,
+            in MovingOutputComponent moveOutput,
             in NeedBasedSystemOutput needOutput
         )
         {
@@ -67,22 +68,22 @@ public partial struct SleepingActionSystem : ISystem
 
             if (TransformLookup.TryGetComponent(target, out var sleepableTransform) == false)
             {
-                WakeUp(entity, ref sleepingTag);
+                //WakeUp(entity, ref sleepingTag);
                 return;
             }
 
-            if (sleepingTag.IsSleeping)
+            //if (sleepingTag.IsSleeping)
             {
                 if (needOutput.Action == ActionTypes.Sleep == false)
                 {
-                    WakeUp(entity, ref sleepingTag);
+                    //WakeUp(entity, ref sleepingTag);
                     return;
                 }
 
 
                 if (BufferLookup.TryGetBuffer(target, out var buffer) == false)
                 {
-                    WakeUp(entity, ref sleepingTag);
+                    //WakeUp(entity, ref sleepingTag);
                     return;
                 }
 
@@ -95,7 +96,7 @@ public partial struct SleepingActionSystem : ISystem
 
             if (hasArrived)
             {
-                FallAsleep(entity, ref sleepingTag);
+                //FallAsleep(entity, ref sleepingTag);
                 return;
             }
 
@@ -104,8 +105,8 @@ public partial struct SleepingActionSystem : ISystem
             moveInput.TargetScale = 0;
             moveInput.Speed = WalkingSpeed;
 
-            needs.Energy -= DeltaTime * needs.EnergyDecayFactor;
-            needs.Fullness -= DeltaTime * needs.HungerDecayFactor;
+            //needs.Energy -= DeltaTime * needs.EnergyDecayFactor;
+            //needs.Fullness -= DeltaTime * needs.HungerDecayFactor;
 
             if (needs.Fullness <= 0)
             {
@@ -138,8 +139,8 @@ public partial struct SleepingActionSystem : ISystem
 
             // TODO change ingterval of thinking
             Ecb.SetSleepingAnimation(viewEntity);
-            Ecb.SetComponentEnabled<MoveToTargetInputComponent>(entity, false);
-            tag.IsSleeping = true;
+            Ecb.SetComponentEnabled<MovingInputComponent>(entity, false);
+            //tag.IsSleeping = true;
         }
 
         private void WakeUp(Entity entity, ref SleepingStateTag tag)
@@ -149,8 +150,8 @@ public partial struct SleepingActionSystem : ISystem
             Ecb.SetComponentEnabled<SearchingStateTag>(entity, true);
             Ecb.SetComponentEnabled<SleepingStateTag>(entity, false);
             Ecb.SetIdleAnimation(viewEntity);
-            Ecb.SetComponentEnabled<MoveToTargetInputComponent>(entity, true);
-            tag.IsSleeping = false;
+            Ecb.SetComponentEnabled<MovingInputComponent>(entity, true);
+            //tag.IsSleeping = false;
         }
 
         private void Die(Entity entity)
@@ -158,9 +159,9 @@ public partial struct SleepingActionSystem : ISystem
             var viewEntity = ReferenceLookup.GetView(entity);
 
             Ecb.SetComponentEnabled<DyingStateTag>(entity, true);
-            Ecb.SetComponentEnabled<MoveToTargetInputComponent>(entity, false);
+            Ecb.SetComponentEnabled<MovingInputComponent>(entity, false);
             Ecb.SetComponentEnabled<SleepingStateTag>(entity, false);
-            Ecb.SetComponentEnabled<ActorNeedsComponent>(entity, false);
+            Ecb.SetComponentEnabled<NeedBasedDecisionTag>(entity, false);
             Ecb.SetComponentEnabled<StateTimeComponent>(entity, false);
             Ecb.SetComponentEnabled<VisionComponent>(entity, false);
 

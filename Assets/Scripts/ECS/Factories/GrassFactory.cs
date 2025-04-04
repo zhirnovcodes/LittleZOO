@@ -37,10 +37,8 @@ public static class GrassFactory
         var reproductionInterval = GetRandomVariation(ref random, reproudctionIntervalVar);
         var reproductiveChance = GetRandomVariation(ref random, reproductiveChanceVar);
 
-        var advertisedEnergyVar = config.BlobReference.Value.Advertisers.Grass.EnergyValue;
-        var advertisedFullnessVar = config.BlobReference.Value.Advertisers.Grass.FullnessValue;
-        var advertisedEnergy = GetRandomVariation(ref random, advertisedEnergyVar);
-        var advertisedFullness = GetRandomVariation(ref random, advertisedFullnessVar);
+        var advertisedEnergy = GetRandomVariation(ref random, config.BlobReference.Value.Advertisers.Grass.EnergyValueMin, config.BlobReference.Value.Advertisers.Grass.EnergyValueMax);
+        var advertisedFullness = GetRandomVariation(ref random, config.BlobReference.Value.Advertisers.Grass.FullnessValueMin, config.BlobReference.Value.Advertisers.Grass.FullnessValueMax);
 
         GrassDNAComponent dna = new GrassDNAComponent
         {
@@ -83,28 +81,28 @@ public static class GrassFactory
             Prefab = parentDNA.Prefab,
 
             // Growing parameters with variations
-            MinSize = GetRandomVariation(ref random, parentDNA.MinSize, deviation),
-            MaxSize = GetRandomVariation(ref random, parentDNA.MaxSize, deviation),
-            MinWholeness = GetRandomVariation(ref random, parentDNA.MinWholeness, deviation),
-            MaxWholeness = GetRandomVariation(ref random, parentDNA.MaxWholeness, deviation),
-            GrowthSpeed = GetRandomVariation(ref random, parentDNA.GrowthSpeed, deviation),
+            MinSize = GetRandomVariationWithDeviation(ref random, parentDNA.MinSize, deviation),
+            MaxSize = GetRandomVariationWithDeviation(ref random, parentDNA.MaxSize, deviation),
+            MinWholeness = GetRandomVariationWithDeviation(ref random, parentDNA.MinWholeness, deviation),
+            MaxWholeness = GetRandomVariationWithDeviation(ref random, parentDNA.MaxWholeness, deviation),
+            GrowthSpeed = GetRandomVariationWithDeviation(ref random, parentDNA.GrowthSpeed, deviation),
 
             // Aging parameters with variations
-            AgingFunctionSpan = GetRandomVariation(ref random, parentDNA.AgingFunctionSpan, deviation),
-            AgingFunctionHeight = GetRandomVariation(ref random, parentDNA.AgingFunctionHeight, deviation),
+            AgingFunctionSpan = GetRandomVariationWithDeviation(ref random, parentDNA.AgingFunctionSpan, deviation),
+            AgingFunctionHeight = GetRandomVariationWithDeviation(ref random, parentDNA.AgingFunctionHeight, deviation),
 
             // Edible parameters with variations
-            MaxNutrition = GetRandomVariation(ref random, parentDNA.MaxNutrition, deviation),
+            MaxNutrition = GetRandomVariationWithDeviation(ref random, parentDNA.MaxNutrition, deviation),
 
             // Reproduction parameters with variations
-            ReproductionFunctionSpan = GetRandomVariation(ref random, parentDNA.ReproductionFunctionSpan, deviation),
-            ReproductionFunctionHeight = GetRandomVariation(ref random, parentDNA.ReproductionFunctionHeight, deviation),
-            ReproductionInterval = GetRandomVariation(ref random, parentDNA.ReproductionInterval, deviation),
-            ReproductiveChance = GetRandomVariation(ref random, parentDNA.ReproductiveChance, deviation),
+            ReproductionFunctionSpan = GetRandomVariationWithDeviation(ref random, parentDNA.ReproductionFunctionSpan, deviation),
+            ReproductionFunctionHeight = GetRandomVariationWithDeviation(ref random, parentDNA.ReproductionFunctionHeight, deviation),
+            ReproductionInterval = GetRandomVariationWithDeviation(ref random, parentDNA.ReproductionInterval, deviation),
+            ReproductiveChance = GetRandomVariationWithDeviation(ref random, parentDNA.ReproductiveChance, deviation),
 
             // Advertisers
-            AdvertisedEnergy = GetRandomVariation(ref random, parentDNA.AdvertisedEnergy, deviation),
-            AdvertisedFullness = GetRandomVariation(ref random, parentDNA.AdvertisedFullness, deviation)
+            AdvertisedEnergy = GetRandomVariationWithDeviation(ref random, parentDNA.AdvertisedEnergy, deviation),
+            AdvertisedFullness = GetRandomVariationWithDeviation(ref random, parentDNA.AdvertisedFullness, deviation)
         };
 
         return childDNA;
@@ -174,8 +172,14 @@ public static class GrassFactory
         // Add edible component
         ecb.AddComponent(grassEntity, new EdibleComponent
         {
-            Nutrition = 0, // Will be calculated based on wholeness
+            Nutrition = dna.AdvertisedFullness.x, // Will be calculated based on wholeness
             MaxNutrition = dna.MaxNutrition
+        });
+
+        // Add sleepable component
+        ecb.AddComponent(grassEntity, new SleepableComponent
+        {
+            EnergyIncreaseSpeed = dna.AdvertisedEnergy.y
         });
 
         // Add random component
@@ -226,14 +230,19 @@ public static class GrassFactory
         return random.NextFloat(0, 1) <= chance;
     }
 
-    private static float GetRandomVariation(ref Random random, float oldValue, float2 deviation)
+    private static float GetRandomVariationWithDeviation(ref Random random, float oldValue, float2 deviation)
     {
         return random.NextFloat(deviation.x, deviation.y) * oldValue;
     }
 
-    private static float2 GetRandomVariation(ref Random random, float2 oldValue, float2 deviation)
+    private static float2 GetRandomVariationWithDeviation(ref Random random, float2 oldValue, float2 deviation)
     {
         return random.NextFloat(deviation.x, deviation.y) * oldValue;
+    }
+
+    private static float2 GetRandomVariation(ref Random random, float2 min, float2 max)
+    {
+        return random.NextFloat2(min, max);
     }
 
     private static float GetRandomVariation(ref Random random, float2 minMax)

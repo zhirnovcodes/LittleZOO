@@ -2,14 +2,17 @@ namespace Zoo.Enums
 {
     public enum ActionTypes : byte
     {
+        Idle,
         Search,
         Eat,
-        Sleep
+        Sleep,
+        Escape
     }
 
     public enum SubActionTypes
     {
-        Explore,
+        Idle,
+        Search,
         MoveTo,
         RunFrom,
         Eat,
@@ -18,8 +21,8 @@ namespace Zoo.Enums
 
     public enum ActionStatus
     {
+        Running,
         Success, 
-        Fail, 
-        Running
+        Fail
     }
 }

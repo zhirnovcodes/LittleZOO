@@ -16,7 +16,7 @@ public  static class StatesExtentions
     {
         SetComponentDisabled<IdleStateTag>(entity, commandBuffer);
         SetComponentDisabled<SearchingStateTag>(entity, commandBuffer);
-        SetComponentDisabled<RunningStateTag>(entity, commandBuffer);
+        SetComponentDisabled<RunningFromStateTag>(entity, commandBuffer);
         SetComponentDisabled<SleepingStateTag>(entity, commandBuffer);
         SetComponentDisabled<DyingStateTag>(entity, commandBuffer);
         SetComponentDisabled<EatingStateTag>(entity, commandBuffer);
@@ -27,7 +27,7 @@ public  static class StatesExtentions
     {
         SetComponentDisabled<IdleStateTag>(entity, commandBuffer, sortKey);
         SetComponentDisabled<SearchingStateTag>(entity, commandBuffer, sortKey);
-        SetComponentDisabled<RunningStateTag>(entity, commandBuffer, sortKey);
+        SetComponentDisabled<RunningFromStateTag>(entity, commandBuffer, sortKey);
         SetComponentDisabled<SleepingStateTag>(entity, commandBuffer, sortKey);
         SetComponentDisabled<DyingStateTag>(entity, commandBuffer, sortKey);
         SetComponentDisabled<EatingStateTag>(entity, commandBuffer, sortKey);

@@ -5,7 +5,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 
-[UpdateInGroup(typeof(SimulationSystemGroup))]
+[UpdateInGroup(typeof(BiologicalSystemGroup))]
 [BurstCompile]
 public partial struct PlantGrowingSystem : ISystem
 {

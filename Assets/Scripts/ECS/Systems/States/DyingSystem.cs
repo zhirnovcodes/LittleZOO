@@ -4,6 +4,9 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 
+
+[BurstCompile]
+[UpdateInGroup(typeof(BiologicalSystemGroup))]
 public partial struct DyingSystem : ISystem
 {
     public void OnCreate(ref SystemState state)
@@ -25,9 +28,11 @@ public partial struct DyingSystem : ISystem
 
         var pigComposingTime = config.BlobReference.Value.AnimationData.PigData.ComposingTime;
 
+        var deltaTime = SystemAPI.Time.DeltaTime;
+
         var job = new DyingJob()
         {
-            DeltaTime = SystemAPI.Time.DeltaTime,
+            DeltaTime = deltaTime,
             ComposingTime = pigComposingTime,
             Ecb = ecb,
             Icosphere = icosphere,

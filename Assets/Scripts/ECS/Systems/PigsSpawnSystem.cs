@@ -11,6 +11,8 @@ public partial struct PigsSpawnSystem : ISystem
     public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<SimulationConfigComponent>();
+        state.RequireForUpdate<PrefabsLibraryComponent>();
+        state.RequireForUpdate<SimulationRandomComponent>();
         state.RequireForUpdate<PlanetComponent>();
     }
 
@@ -24,9 +26,9 @@ public partial struct PigsSpawnSystem : ISystem
     {
         state.Enabled = false;
         
-        var entity = SystemAPI.GetSingletonEntity<ActorsSpawnRandomComponent>();
+        var entity = SystemAPI.GetSingletonEntity<SimulationRandomComponent>();
         var config = SystemAPI.GetSingleton<SimulationConfigComponent>();
-        var randomData = SystemAPI.GetComponentRW<ActorsSpawnRandomComponent>(entity);
+        var randomData = SystemAPI.GetComponentRW<SimulationRandomComponent>(entity);
 
         var commandBuffer = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
 
@@ -45,7 +47,7 @@ public partial struct PigsSpawnSystem : ISystem
             var newPosition = GetRandomPosition(planetCenter, planetScale, 1, randomData, pigsHeightVar);
             var newRotation = GetRandomRotation();
 
-            PigsFactory.SpawnPig(newPosition, newRotation, commandBuffer, randomData, ref config.BlobReference.Value);
+            PigsFactory.SpawnPig(newPosition, newRotation, commandBuffer, randomData, config.BlobReference.Value);
         }
 
         commandBuffer.Playback(state.EntityManager);
@@ -56,7 +58,7 @@ public partial struct PigsSpawnSystem : ISystem
         return quaternion.identity;
     }
 
-    private float3 GetRandomPosition(float3 centerPosition, float planetScale, float pigScale, RefRW<ActorsSpawnRandomComponent> random, float2 spawnHeight)
+    private float3 GetRandomPosition(float3 centerPosition, float planetScale, float pigScale, RefRW<SimulationRandomComponent> random, float2 spawnHeight)
     {
         var randomDirection = new float3(0, 0, 0);
         while (math.distancesq(randomDirection, new float3(0,0,0)) <= 0)

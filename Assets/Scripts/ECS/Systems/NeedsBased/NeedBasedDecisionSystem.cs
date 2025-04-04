@@ -2,9 +2,13 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Transforms;
 using Zoo.Enums;
 
+
 [BurstCompile]
+[UpdateInGroup(typeof(AISystemGroup))]
+[UpdateBefore(typeof(ActionManagerSystem))]
 public partial struct NeedBasedDecisionSystem : ISystem
 {
     [BurstCompile]
@@ -25,13 +29,13 @@ public partial struct NeedBasedDecisionSystem : ISystem
 
         var parallelEcb = ecb.AsParallelWriter();
         var advertisedActionLookup = SystemAPI.GetBufferLookup<AdvertisedActionItem>(true);
+        var transformLookup = SystemAPI.GetComponentLookup<LocalTransform>(true);
 
-        var job = new NeedBasedDecisionJob
+        var job = new NeedBasedDecisionJob2
         {
             Ecb = parallelEcb,
             AdvertisedActionLookup = advertisedActionLookup,
-            HungerDecayFactor = config.BlobReference.Value.Needs.HungerDecayFactor,
-            EnergyDecayFactor = config.BlobReference.Value.Needs.EnergyDecayFactor
+            TransformLookup = transformLookup
         };
 
         // Schedule the job properly
@@ -42,14 +46,15 @@ public partial struct NeedBasedDecisionSystem : ISystem
     partial struct NeedBasedDecisionJob : IJobEntity
     {
         [ReadOnly] public BufferLookup<AdvertisedActionItem> AdvertisedActionLookup;
+        public EntityCommandBuffer.ParallelWriter Ecb;
         public float2 HungerDecayFactor;
         public float2 EnergyDecayFactor;
-        public EntityCommandBuffer.ParallelWriter Ecb;
 
         void Execute(
             [EntityIndexInQuery] int sortKey,
             Entity entity,
             in ActorNeedsComponent actorNeeds,
+            in NeedBasedDecisionTag tag,
             [ReadOnly] in DynamicBuffer<VisionItem> visibleEntities)
         {
             float maxSum = float.MinValue;
@@ -146,6 +151,192 @@ public partial struct NeedBasedDecisionSystem : ISystem
             var newMoodValue = newFullness + newEnergy;
 
             return (newMoodValue, newMoodValue > 0);
+        }
+    }
+
+    [BurstCompile]
+    partial struct NeedBasedDecisionJob2 : IJobEntity
+    {
+        public float PlanetSize;
+
+        [ReadOnly] public BufferLookup<AdvertisedActionItem> AdvertisedActionLookup;
+        [ReadOnly] public ComponentLookup<LocalTransform> TransformLookup;
+
+        public EntityCommandBuffer.ParallelWriter Ecb;
+
+        void Execute(
+            [EntityIndexInQuery] int sortKey,
+            Entity actor,
+            in NeedBasedDecisionTag tag,
+            in ActorNeedsComponent actorNeeds,
+            in MovingSpeedComponent speedComponent,
+            in HungerComponent hungerComponent,
+            in EnergyComponent energyComponent,
+            //[ReadOnly] in DynamicBuffer<ActionTypes> actorActions,
+            [ReadOnly] in DynamicBuffer<VisionItem> visibleEntities)
+        {
+            if (!TransformLookup.TryGetComponent(actor, out var actorTransform))
+                return;
+
+            float bestNeedSum = 0;
+            Entity bestAdvertiser = Entity.Null;
+            ActionTypes bestAction = default;
+
+            // Check all visible entities
+
+            foreach (var visible in visibleEntities)
+            {
+                var advertiser = visible.VisibleEntity;
+
+                if (!TransformLookup.TryGetComponent(advertiser, out var advertiserTransform))
+                    continue;
+
+                float distance = GetSphericalArcLength(actorTransform.Position, advertiserTransform.Position, PlanetSize);
+
+                var (bestActorSum, bestActorAcition) = GetBestAction
+                    (
+                        advertiser,
+                        distance,
+                        speedComponent,
+                        //actorActions,
+                        actorNeeds,
+                        hungerComponent,
+                        energyComponent
+                    );
+
+                if (bestActorSum > bestNeedSum)
+                {
+                    bestNeedSum = bestActorSum;
+                    bestAdvertiser = advertiser;
+                    bestAction = bestActorAcition;
+                }
+            }
+
+            // Check planet
+
+            var output = new NeedBasedSystemOutput
+            {
+                Advertiser = bestAdvertiser,
+                Action = bestAdvertiser == Entity.Null ? ActionTypes.Idle : bestAction
+            };
+
+            Ecb.SetComponent(sortKey, actor, output);
+        }
+
+        private float CalculateIdleOutcome(
+            in ActorNeedsComponent needs,
+            in HungerComponent hunger,
+            in EnergyComponent energy,
+            float duration)
+        {
+            float newFullness = needs.Fullness + (hunger.FullnessDecaySpeed * duration);
+            float newEnergy = needs.Energy + (energy.EnergyDecaySpeed * duration);
+            return newFullness + newEnergy;
+        }
+
+        private (float resultSum, bool valid, float actionTime) EvaluateAdvertisedAction(
+            in ActorNeedsComponent needs,
+            in AdvertisedActionItem action,
+            float travelTime,
+            float travelDistance,
+            in HungerComponent hunger,
+            in EnergyComponent energy)
+        {
+            // Spend for travel
+            var travelFullnessDecay = hunger.FullnessDecaySpeed * travelTime + hunger.FullnessDecayByDistance * travelDistance;
+            var travelEnergyDecay = energy.EnergyDecaySpeed * travelTime + energy.EnergyDecayByDistance * travelDistance;
+
+            var newFullness = needs.Fullness - travelFullnessDecay;
+            var newEnergy = needs.Energy - travelEnergyDecay;
+
+            if (newFullness <= 0 || newEnergy <= 0)
+            {
+                return (0, false, 0);
+            }
+
+            // Natural spend while performing
+            float2 gainPerSecond = action.NeedsMatrix;
+            int needIndex = (int)action.NeedId;
+            float currentNeed = needIndex == 0 ? needs.Fullness : needs.Energy;
+            float needed = 100f - currentNeed;
+            var increase = gainPerSecond[needIndex];
+            var decrease = needIndex == 0 ? hunger.FullnessDecaySpeed : energy.EnergyDecaySpeed;
+
+            if (needed <= 0 || increase <= 0 || increase <= decrease)
+            {
+                return (0, false, 0);
+            }
+
+            float performTime = needed / (increase - decrease);
+
+            newFullness += (gainPerSecond[0] - hunger.FullnessDecaySpeed) * performTime;
+            newEnergy += (gainPerSecond[1] - energy.EnergyDecaySpeed) * performTime;
+
+            // Pack result needs and time (z) into float3 for comparison
+            return (newFullness + newEnergy, true, performTime);
+        }
+
+        /*
+        private bool ContainsAction(in DynamicBuffer<ActionTypes> buffer, ActionTypes action)
+        {
+            foreach (var a in buffer)
+                if (a == action) return true;
+            return false;
+        }*/
+
+        private float GetSphericalArcLength(float3 from, float3 to, float radius)
+        {
+            float dot = math.dot(math.normalize(from), math.normalize(to));
+            float angle = math.acos(math.clamp(dot, -1f, 1f));
+            return radius * angle;
+        }
+
+        private (float, ActionTypes) GetBestAction(
+            Entity advertiser, 
+            float distance, 
+            in MovingSpeedComponent speedComponent, 
+            //in DynamicBuffer<ActionTypes> actorActions,
+            in ActorNeedsComponent actorNeeds,
+            in HungerComponent hunger,
+            in EnergyComponent energy
+            )
+        {
+            float bestSum = 0;
+            var resultAction = ActionTypes.Idle;
+
+            if (!AdvertisedActionLookup.TryGetBuffer(advertiser, out var advertisedActions))
+                return (bestSum, resultAction);
+
+            var speed = math.lerp(speedComponent.SpeedRange.x, speedComponent.SpeedRange.y, 0.5f);
+            float travelTime = distance / speed;
+
+            foreach (var advertised in advertisedActions)
+            {
+                //if (!ContainsAction(actorActions, advertised.ActionId))
+                //    continue;
+
+                var (resultingNeed, valid, time) = EvaluateAdvertisedAction(
+                    actorNeeds,
+                    advertised,
+                    travelTime,
+                    distance,
+                    hunger,
+                    energy);
+
+                if (!valid)
+                    continue;
+
+                // Now calculate idle result for same duration as this action (travel + perform)
+                float idleResult = CalculateIdleOutcome(actorNeeds, hunger, energy, time);
+
+                if (resultingNeed > idleResult)
+                {
+                    bestSum = resultingNeed;
+                    resultAction = advertised.ActionId;
+                }
+            }
+
+            return (bestSum, resultAction);
         }
     }
 }

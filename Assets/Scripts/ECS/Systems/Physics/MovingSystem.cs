@@ -7,21 +7,18 @@ using Zoo.Physics;
 
 [BurstCompile]
 [UpdateInGroup(typeof(ZooPhysicsSystemGroup))]
-public partial struct MoveToTargetSystem : ISystem
+public partial struct MovingSystem : ISystem
 {
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        state.RequireForUpdate<MoveToTargetOutputComponent>();
+        state.RequireForUpdate<MovingOutputComponent>();
         state.RequireForUpdate<PlanetComponent>();
     }
 
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        var planetEntity = SystemAPI.GetSingletonEntity<PlanetComponent>();
-        var planetTransform = SystemAPI.GetComponentRO<LocalTransform>(planetEntity);
-
         float deltaTime = SystemAPI.Time.DeltaTime;
 
         var moveToTargetJob = new MoveToTargetJob
@@ -39,14 +36,15 @@ public partial struct MoveToTargetSystem : ISystem
         public float DeltaTime;
 
         public void Execute(
-            ref MoveToTargetOutputComponent movingOutputData,
+            ref MovingOutputComponent movingOutputData,
             ref PhysicsVelocity velocity,
-            in MoveToTargetInputComponent movingInputData,
+            in MovingInputComponent movingInputData,
             in LocalTransform transform,
             in GravityComponent gravity)
         {
             movingOutputData.NoTargetSet = IsEmptyData(movingInputData.TargetPosition);
             movingOutputData.HasArivedToTarget = false;
+            movingOutputData.Speed = 0;
 
             if (movingOutputData.NoTargetSet)
             {
@@ -69,10 +67,12 @@ public partial struct MoveToTargetSystem : ISystem
             float distanceToTargetSq = math.lengthsq(movingInputData.TargetPosition - transform.Position);
             float horizontalSpeed = movingInputData.Speed;
 
-            if (distanceToTargetSq <= math.square(horizontalSpeed * DeltaTime))
+            if (distanceToTargetSq < math.square(horizontalSpeed * DeltaTime))
             {
                 horizontalSpeed = math.sqrt(distanceToTargetSq) / DeltaTime;
             }
+
+            movingOutputData.Speed = horizontalSpeed;
 
             float3 direction = movingInputData.TargetPosition - transform.Position;
             float3 up = -gravity.GravityDirection;

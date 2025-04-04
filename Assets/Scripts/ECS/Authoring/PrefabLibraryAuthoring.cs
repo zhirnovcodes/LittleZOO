@@ -17,6 +17,8 @@ public class PrefabLibraryAuthoring : MonoBehaviour
                 Pig = GetEntity(authoring.Pig, TransformUsageFlags.Dynamic),
                 Grass = GetEntity(authoring.Grass, TransformUsageFlags.Dynamic)
             });
+
+            Debug.Log("Prefab library BLOB is created");
         }
     }
 }

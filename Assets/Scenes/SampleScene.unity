@@ -438,19 +438,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eaee401fd5f267d439747837ec6655a4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Planet: {fileID: 400927344}
+  Planet: {fileID: 2091672686258386869, guid: 3cec49181cd738d4994c2cdc6c589703, type: 3}
   CameraHandle: {fileID: 730744319}
   CameraDepthHandle: {fileID: 1632507003}
   CameraRotationHandle: {fileID: 1082507397}
   Camera: {fileID: 330585545}
-  MinOffset: 3
+  MinOffset: 1
   MaxOffset: 100
-  ZoomSpeed: 50
-  ZoomPower: 5
-  ScrollPower: 0.4
-  ScrollSmoothness: 5
-  MaxRotationAngle: -50
-  RotationDepthStart: -73
+  ZoomSpeed: 10
+  ZoomPower: 10
+  ScrollPower: 10
+  ScrollSmoothness: 10
+  MaxRotationAngle: 50
+  RotationDepthStart: -30
 --- !u!4 &730744319
 Transform:
   m_ObjectHideFlags: 0

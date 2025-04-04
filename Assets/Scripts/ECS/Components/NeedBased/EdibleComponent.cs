@@ -8,3 +8,8 @@ public struct EdibleComponent : IComponentData
     public float MaxNutrition;
     public float BitenPart;
 }
+
+public struct SleepableComponent : IComponentData
+{
+    public float EnergyIncreaseSpeed;
+}

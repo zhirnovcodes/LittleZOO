@@ -1,4 +1,6 @@
+using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 using Zoo.Enums;
 
 public static class ActionsExtentions
@@ -25,12 +27,15 @@ public static class ActionsExtentions
     {
         SetActionDisabled<IdleStateTag>(entity, commandBuffer);
         SetActionDisabled<SearchingStateTag>(entity, commandBuffer);
+        SetActionDisabled<MovingToStateTag>(entity, commandBuffer);
         SetActionDisabled<SleepingStateTag>(entity, commandBuffer);
         SetActionDisabled<EatingStateTag>(entity, commandBuffer);
+        SetActionDisabled<DyingStateTag>(entity, commandBuffer);
     }
 
     public static void SetState<T>(Entity entity, EntityCommandBuffer commandBuffer) where T: struct, IStateTag, IEnableableComponent
     {
+        commandBuffer.SetComponent(entity, new SubActionOutputComponent { Status = ActionStatus.Running });
         SetAllDisabled(entity, commandBuffer);
         commandBuffer.SetComponentEnabled<T>(entity, true);
     }
@@ -45,74 +50,153 @@ public static class ActionsExtentions
     {
         switch (type)
         {
+            case SubActionTypes.Idle:
+                SetIdle(ecb, entity);
+                break;
             case SubActionTypes.MoveTo:
                 SetMoving(ecb, entity);
                 break;
-            case SubActionTypes.Explore:
-                SetExploring();
+            case SubActionTypes.Search:
+                SetSearching(ecb, entity);
                 break;
             case SubActionTypes.Eat:
-                SetEating();
+                SetEating(ecb, entity);
                 break;
             case SubActionTypes.Sleep:
-                SetSleeping();
+                SetSleeping(ecb, entity);
                 break;
-            case SubActionTypes.RunFrom:
-                SetDying();
-                break;
+            //case SubActionTypes.RunFrom:
+                //SetDying(ecb, entity);
+                //break;
         }
+    }
+
+    public static void SetIdle(EntityCommandBuffer ecb, Entity entity)
+    {
+        ecb.SetComponentEnabled<VisionComponent>(entity, true);
+        ecb.SetComponentEnabled<MovingInputComponent>(entity, false);
+        ecb.SetComponentEnabled<NeedBasedDecisionTag>(entity, true);
+        ecb.SetComponentEnabled<HungerComponent>(entity, true);
+        ecb.SetComponentEnabled<EnergyComponent>(entity, true);
+
+        ResetMovement(ecb, entity);
+
+        ecb.SetComponentEnabled<ActionInputComponent>(entity, true);
+
+        SetState<IdleStateTag>(entity, ecb);
+
+        //AnimationExtensions.SetIdleAnimation(ecb, entity);
     }
 
     public static void SetMoving(EntityCommandBuffer ecb, Entity entity)
     {
         ecb.SetComponentEnabled<VisionComponent>(entity, true);
-        ecb.SetComponentEnabled<MoveToTargetInputComponent>(entity, true);
+        ecb.SetComponentEnabled<MovingInputComponent>(entity, true);
+        ecb.SetComponentEnabled<NeedBasedDecisionTag>(entity, true);
+        ecb.SetComponentEnabled<HungerComponent>(entity, true);
+        ecb.SetComponentEnabled<EnergyComponent>(entity, true);
 
+        ResetMovement(ecb, entity);
 
-        /*
-        VisionComponent 	Enabled
-		MovingComponent 	Enabled
-		DecisionMakingComponent 	Enabled
-		SafetyComponent		Enabled
-		HungerComponent 	Enabled
-		EnergyComponent 	Enabled
-		DyingComponent		Disabled
-		
-		ExploreActionComponent Disabled
-		MoveToActionComponent Enabled
-		RunFromActionComponent Disabled
-		EatActionComponent Disabled
-		SleepActionComponent Disabled
-		
-		ActionInputComponent Enabled
-		
-		MoveAnimationComponent Enabled
-		RunAnimationComponent Disabled
-		EatAnimationComponent Disabled
-		SleepAnimationComponent Disabled
-		DieAnimationComponent	Disabled
-        */
+        ecb.SetComponentEnabled<ActionInputComponent>(entity, true);
 
+        SetState<MovingToStateTag>(entity, ecb);
 
+        //AnimationExtensions.SetIdleAnimation(ecb, entity);
     }
 
-    public static void SetExploring()
+    public static void SetSearching(EntityCommandBuffer ecb, Entity entity)
     {
-        // Enable and disable appropriate components for Exploring state
+        ResetMovement(ecb, entity);
+        
+        ecb.SetComponentEnabled<VisionComponent>(entity, true);
+        ecb.SetComponentEnabled<MovingInputComponent>(entity, true);
+        ecb.SetComponentEnabled<NeedBasedDecisionTag>(entity, true);
+        ecb.SetComponentEnabled<HungerComponent>(entity, true);
+        ecb.SetComponentEnabled<EnergyComponent>(entity, true);
+
+        ecb.SetComponentEnabled<ActionInputComponent>(entity, true);
+
+        SetState<SearchingStateTag>(entity, ecb);
+
+        //AnimationExtensions.SetIdleAnimation(ecb, entity);
     }
 
-    public static void SetEating()
+    public static void SetEating(EntityCommandBuffer ecb, Entity entity)
     {
-        // Enable and disable appropriate components for Eating state
+        ecb.SetComponentEnabled<VisionComponent>(entity, true);
+        ecb.SetComponentEnabled<MovingInputComponent>(entity, false);
+        ecb.SetComponentEnabled<NeedBasedDecisionTag>(entity, true);
+        ecb.SetComponentEnabled<HungerComponent>(entity, false);
+        ecb.SetComponentEnabled<EnergyComponent>(entity, true);
+
+        ResetMovement(ecb, entity);
+
+        ecb.SetComponentEnabled<ActionInputComponent>(entity, true);
+
+        SetState<EatingStateTag>(entity, ecb);
+
+        //AnimationExtensions.SetIdleAnimation(ecb, entity);
     }
 
-    public static void SetSleeping()
+    public static void SetSleeping(EntityCommandBuffer ecb, Entity entity)
     {
-        // Enable and disable appropriate components for Sleeping state
+        ecb.SetComponentEnabled<VisionComponent>(entity, false);
+        ecb.SetComponentEnabled<MovingInputComponent>(entity, false);
+        ecb.SetComponentEnabled<NeedBasedDecisionTag>(entity, false);
+        ecb.SetComponentEnabled<HungerComponent>(entity, true);
+        ecb.SetComponentEnabled<EnergyComponent>(entity, false);
+
+        ResetMovement(ecb, entity);
+
+        ecb.SetComponentEnabled<ActionInputComponent>(entity, true);
+
+        SetState<SleepingStateTag>(entity, ecb);
+
+        //AnimationExtensions.SetSleepingAnimation(ecb, entity);
     }
 
-    public static void SetDying()
+    public static void SetDying(EntityCommandBuffer ecb, Entity entity)
     {
-        // Enable and disable appropriate components for Dying state
+        ResetMovement(ecb, entity);
+
+        ecb.SetComponentEnabled<VisionComponent>(entity, false);
+        ecb.SetComponentEnabled<MovingInputComponent>(entity, false);
+        ecb.SetComponentEnabled<NeedBasedDecisionTag>(entity, false);
+        ecb.SetComponentEnabled<HungerComponent>(entity, false);
+        ecb.SetComponentEnabled<EnergyComponent>(entity, false);
+
+        ecb.SetComponentEnabled<ActionInputComponent>(entity, false);
+
+        SetState<DyingStateTag>(entity, ecb);
+
+        //AnimationExtensions.SetDyingAnimation(ecb, entity);
+    }
+
+    private static void ResetMovement(EntityCommandBuffer ecb, Entity entity)
+    {
+        ecb.SetComponent(entity, new MovingInputComponent { Speed = 0, TargetPosition = float3.zero, TargetScale = 0 });
+        ecb.SetComponent(entity, new MovingOutputComponent { Speed = 0, HasArivedToTarget = false, NoTargetSet = true });
+    }
+
+    public static bool TryGetSubAction(ref BlobArray<int> actions, ActionTypes action, int index, out SubActionTypes subAction, int actionsCount, int subActionsCount)
+    {
+        var actionIndex = (int)action;
+        var subActionIndex = index < 0 || index >= subActionsCount ? -1 : (index + subActionsCount * actionIndex);
+        
+        if (subActionIndex == -1 || actions[subActionIndex] == -1)
+        {
+            subAction = SubActionTypes.Idle;
+            return false;
+        }
+
+        subAction = (SubActionTypes)actions[subActionIndex];
+        return true;
+    }
+
+    public static bool TryGetSubAction(this ActionChainConfigComponent dto, ActionTypes action, int index, out SubActionTypes subAction)
+    {
+        return TryGetSubAction(ref dto.BlobReference.Value.ActionsMap, action, index, 
+            out subAction, dto.BlobReference.Value.ActionsCount, dto.BlobReference.Value.SubActionsCount);
     }
 }
