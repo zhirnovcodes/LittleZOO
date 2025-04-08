@@ -48,9 +48,9 @@ public partial struct HungerSystem : ISystem
 
             var decrease = naturalDecrease + walkingDecrease;
 
-            needs.Fullness -= decrease;
+            needs.SetFullness(needs.Fullness() - decrease);
 
-            if (needs.Fullness <= 0)
+            if (needs.Fullness() <= 0)
             {
                 ActionsExtentions.SetDying(Ecb, entity);
             }

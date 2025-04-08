@@ -108,7 +108,7 @@ public partial struct SleepingActionSystem : ISystem
             //needs.Energy -= DeltaTime * needs.EnergyDecayFactor;
             //needs.Fullness -= DeltaTime * needs.HungerDecayFactor;
 
-            if (needs.Fullness <= 0)
+            if (needs.Fullness() <= 0)
             {
                 UnityEngine.Debug.Log("Die");
                 Die(entity);
@@ -130,7 +130,7 @@ public partial struct SleepingActionSystem : ISystem
                 }
             }
 
-            needs.Energy += DeltaTime * foundEnergy;
+            //needs.Energy += DeltaTime * foundEnergy;
         } 
 
         private void FallAsleep(Entity entity, ref SleepingStateTag tag)

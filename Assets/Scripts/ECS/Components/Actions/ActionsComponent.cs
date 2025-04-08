@@ -15,5 +15,6 @@ public struct SubActionOutputComponent : IComponentData
 }
 
 public struct NeedBasedDecisionTag : IComponentData, IEnableableComponent 
-{ 
+{
+    public float TimeElapsed;
 }

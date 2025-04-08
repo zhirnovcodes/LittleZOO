@@ -27,7 +27,7 @@ MonoBehaviour:
   grassFullnessAdvertisedMin: {x: 20, y: 0}
   grassFullnessAdvertisedMax: {x: 60, y: 0}
   grassEnergyAdvertisedMin: {x: 0, y: 6}
-  grassEnergyAdvertisedMax: {x: -1, y: 12}
+  grassEnergyAdvertisedMax: {x: 0, y: 12}
   foodPreference: 1
   pigSpeedMin: {x: 1, y: 3}
   pigSpeedMax: {x: 1, y: 3}

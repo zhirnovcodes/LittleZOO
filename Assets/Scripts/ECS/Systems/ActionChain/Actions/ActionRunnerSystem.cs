@@ -34,16 +34,22 @@ public partial struct ActionRunnerSystem : ISystem
 
         var deltaTime = SystemAPI.Time.DeltaTime;
 
+        var idleHandle = new IdleActionJob
+        {
+            TransformLookup = transformLookup
+        }.Schedule(state.Dependency);
+
         var eatingHandle = new EatingActionJob
         {
             DeltaTime = deltaTime,
             EdibleLookup = edibleLookup
-        }.Schedule(state.Dependency);
+        }.Schedule(idleHandle);
 
         var searchHandle = new SearchingActionJob
         {
             PlanetPosition = planetTransform.ValueRO.Position,
-            PlanetScale = planetTransform.ValueRO.Scale
+            PlanetScale = planetTransform.ValueRO.Scale,
+            TransformLookup = transformLookup
         }.Schedule(eatingHandle);
 
         var movingHandle = new MovingToActionJob
@@ -58,8 +64,34 @@ public partial struct ActionRunnerSystem : ISystem
         }.Schedule(movingHandle);
 
         var dependency1 = JobHandle.CombineDependencies
-            (eatingHandle, searchHandle, movingHandle);
-        state.Dependency = JobHandle.CombineDependencies(dependency1, sleepingHandle);
+            (idleHandle, eatingHandle, searchHandle);
+        state.Dependency = JobHandle.CombineDependencies(dependency1, movingHandle, sleepingHandle);
+    }
+
+
+    public partial struct IdleActionJob : IJobEntity
+    {
+        [ReadOnly] public ComponentLookup<LocalTransform> TransformLookup;
+
+        void Execute(
+            ref SubActionOutputComponent output,
+            in NeedBasedSystemOutput needs,
+            in IdleStateTag tag)
+        {
+            if (needs.Action == ActionTypes.Idle)
+            {
+                return;
+            }
+
+            if (needs.Advertiser != Entity.Null &&
+                TransformLookup.TryGetComponent(needs.Advertiser, out var _) == false)
+            {
+                return;
+            }
+            
+            // Found action
+            output.Status = ActionStatus.Success;
+        }
     }
 
 
@@ -95,6 +127,7 @@ public partial struct ActionRunnerSystem : ISystem
 
     public partial struct SearchingActionJob : IJobEntity
     {
+        [ReadOnly] public ComponentLookup<LocalTransform> TransformLookup;
         public float3 PlanetPosition;
         public float PlanetScale;
 
@@ -104,6 +137,7 @@ public partial struct ActionRunnerSystem : ISystem
             ref ActorRandomComponent random,
             in MovingOutputComponent movingOutput,
             in MovingSpeedComponent movingSpeed,
+            in NeedBasedSystemOutput needs,
             in SearchingStateTag tag)
         {
             if (movingOutput.NoTargetSet)
@@ -118,6 +152,21 @@ public partial struct ActionRunnerSystem : ISystem
             {
                 output.Status = ActionStatus.Success;
             }
+
+
+            if (needs.Action == ActionTypes.Search)
+            {
+                return;
+            }
+
+            if (needs.Advertiser != Entity.Null &&
+                TransformLookup.TryGetComponent(needs.Advertiser, out var _) == false)
+            {
+                return;
+            }
+
+            // Found action
+            output.Status = ActionStatus.Success;
         }
 
         // Helper method for generating target positions
@@ -147,9 +196,9 @@ public partial struct ActionRunnerSystem : ISystem
 
             var energyIncrease = sleepable.EnergyIncreaseSpeed * DeltaTime;
 
-            needs.Energy = math.min(100, needs.Energy + energyIncrease);
+            needs.SetEnergy(math.min(100, needs.Energy() + energyIncrease));
 
-            if (needs.Energy >= 100)
+            if (needs.Energy() >= 100)
             {
                 output.Status = ActionStatus.Success;
             }
@@ -188,7 +237,7 @@ public partial struct ActionRunnerSystem : ISystem
                 return;
             }
 
-            if (needs.Fullness >= 100)
+            if (needs.Fullness() >= 100)
             {
                 output.Status = ActionStatus.Success;
                 return;
@@ -206,7 +255,7 @@ public partial struct ActionRunnerSystem : ISystem
 
             var nutritiousValue = biteValue * nutritiousAll / 100f;
 
-            needs.Fullness = math.min(100, needs.Fullness + nutritiousValue);
+            needs.SetFullness(math.min(100, needs.Fullness() + nutritiousValue));
             edibleComponent.ValueRW.BitenPart += biteValue;
 
             return oldWholeness - biteValue <= 0;

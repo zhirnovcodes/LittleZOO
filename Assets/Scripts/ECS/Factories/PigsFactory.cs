@@ -25,11 +25,11 @@ public static class PigsFactory
         var energyDecayFator = MathExtentions.GetRandomVariation(ref random.ValueRW.Random, settings.Needs.EnergyDecayByDistance);
         var fullness = MathExtentions.GetRandom100(ref random.ValueRW.Random);
         var energy = MathExtentions.GetRandom100(ref random.ValueRW.Random);
+        var need = new float2(fullness, energy);
 
         commandBuffer.AddComponent(newPig, new ActorNeedsComponent
         {
-            Fullness = fullness,
-            Energy = energy,
+            Needs = need
         });
 
         // vision

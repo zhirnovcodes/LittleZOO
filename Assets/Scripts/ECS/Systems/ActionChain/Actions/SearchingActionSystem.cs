@@ -91,7 +91,7 @@ public partial struct SearchingActionSystem : ISystem
 
             }
 
-            if (needs.Fullness <= 0)
+            //if (needs.Fullness <= 0)
             {
                 UnityEngine.Debug.Log("Die");
                 Die(entity);

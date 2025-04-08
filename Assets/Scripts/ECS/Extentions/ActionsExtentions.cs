@@ -200,3 +200,25 @@ public static class ActionsExtentions
             out subAction, dto.BlobReference.Value.ActionsCount, dto.BlobReference.Value.SubActionsCount);
     }
 }
+
+public static class NeedsExtentions
+{
+    public static float Fullness(this ActorNeedsComponent need)
+    {
+        return need.Needs[0];
+    }
+    public static float Energy(this ActorNeedsComponent need)
+    {
+        return need.Needs[1];
+    }
+
+
+    public static void SetFullness(this ref ActorNeedsComponent need, float value)
+    {
+        need.Needs = new float2(value, need.Needs.y);
+    }
+    public static void SetEnergy(this ref ActorNeedsComponent need, float value)
+    {
+        need.Needs = new float2(need.Needs.x, value);
+    }
+}

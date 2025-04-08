@@ -142,7 +142,7 @@ public partial struct EatingActionSystem : ISystem
             //needs.Energy -= DeltaTime * needs.EnergyDecayFactor;
             //needs.Fullness -= DeltaTime * needs.HungerDecayFactor;
 
-            if (needs.Fullness <= 0)
+            if (needs.Fullness() <= 0)
             {
                 UnityEngine.Debug.Log("Die");
                 Die(entity);
@@ -163,7 +163,7 @@ public partial struct EatingActionSystem : ISystem
 
             var nutritiousValue = biteValue * nutritiousAll / 100f;
 
-            needs.Fullness = math.min(100, needs.Fullness + nutritiousValue);
+            //needs.Fullness = math.min(100, needs.Fullness + nutritiousValue);
             edibleComponent.ValueRW.BitenPart += biteValue;
         }
 

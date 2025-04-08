@@ -445,10 +445,10 @@ MonoBehaviour:
   Camera: {fileID: 330585545}
   MinOffset: 1
   MaxOffset: 100
-  ZoomSpeed: 10
-  ZoomPower: 10
-  ScrollPower: 10
-  ScrollSmoothness: 10
+  ZoomSpeed: 1
+  ZoomPower: 1
+  ScrollPower: 1
+  ScrollSmoothness: 1
   MaxRotationAngle: 50
   RotationDepthStart: -30
 --- !u!4 &730744319

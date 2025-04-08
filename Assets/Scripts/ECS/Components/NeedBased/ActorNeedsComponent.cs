@@ -1,7 +1,7 @@
 using Unity.Entities;
+using Unity.Mathematics;
 
 public struct ActorNeedsComponent : IComponentData
 {
-    public float Fullness;
-    public float Energy;
+    public float2 Needs;
 }

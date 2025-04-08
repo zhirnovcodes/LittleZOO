@@ -47,12 +47,12 @@ public partial struct EnergySystem : ISystem
 
             var decrease = naturalDecrease + walkingDecrease;
 
-            needs.Energy -= decrease;
+            needs.SetEnergy(needs.Energy() - decrease);
 
-            if (needs.Energy <= 0)
+            if (needs.Energy() <= 0)
             {
                 ActionsExtentions.SetSleeping(Ecb, entity);
-                needs.Energy = 0;
+                needs.SetEnergy(0);
             }
         }
     }

@@ -33,9 +33,10 @@ public partial struct ActionManagerSystem : ISystem
         var deltaTime = SystemAPI.Time.DeltaTime;
 
         var actionMap = SystemAPI.GetSingleton<ActionChainConfigComponent>();
+        var transformLookup = SystemAPI.GetComponentLookup<LocalTransform>();
 
         //var ecb = new EntityCommandBuffer(Allocator.TempJob);
-
+        /*
         var actionHandle = new ActionChainJob
         {
             DeltaTime = deltaTime,
@@ -50,7 +51,15 @@ public partial struct ActionManagerSystem : ISystem
             ActionsMap = actionMap
         }.Schedule(actionHandle);
         
-        state.Dependency = JobHandle.CombineDependencies(actionHandle, subActionHandle);
+        state.Dependency = JobHandle.CombineDependencies(actionHandle, subActionHandle);*/
+
+        new SubActionChainJob
+        {
+            DeltaTime = deltaTime,
+            Ecb = ecb,
+            ActionsMap = actionMap,
+            Lookup = transformLookup
+        }.Schedule();
     }
 
     [BurstCompile]
@@ -109,10 +118,12 @@ public partial struct ActionManagerSystem : ISystem
         public float DeltaTime;
         public EntityCommandBuffer Ecb;
         [ReadOnly] public ActionChainConfigComponent ActionsMap;
+        [ReadOnly] public ComponentLookup<LocalTransform> Lookup;
 
         void Execute(
             Entity entity,
             ref ActionInputComponent actionInput,
+            in NeedBasedSystemOutput needs,
             in SubActionOutputComponent output)
         {
             // Same current action
@@ -127,10 +138,10 @@ public partial struct ActionManagerSystem : ISystem
             switch (currentStatus)
             {
                 case ActionStatus.Success:
-                    SetNextSubAction(entity, ref actionInput);
+                    SetNextSubAction(entity, ref actionInput, needs);
                     break;
                 case ActionStatus.Fail:
-                    ResetMainAction(entity, ref actionInput);
+                    ResetMainAction(entity, ref actionInput, needs);
                     break;
                 case ActionStatus.Running:
                     return;
@@ -138,6 +149,34 @@ public partial struct ActionManagerSystem : ISystem
         }
 
         private void ResetMainAction(
+            Entity entity,
+            ref ActionInputComponent actionInput,
+            in NeedBasedSystemOutput needs)
+        {
+            if (needs.Advertiser == Entity.Null ||
+                Lookup.TryGetComponent(needs.Advertiser, out var _) == false)
+            {
+                SetIdleAction(entity, ref actionInput);
+                return;
+            }
+
+            actionInput.Action = needs.Action;
+            actionInput.Target = needs.Advertiser;
+
+            actionInput.CurrentActionIndex = 0;
+
+            actionInput.TimeElapsed = 0;
+
+            if (ActionsExtentions.TryGetSubAction(ActionsMap, actionInput.Action, 0, out var subAction))
+            {
+                ActionsExtentions.SetAction(Ecb, subAction, entity);
+                return;
+            }
+
+            SetIdleAction(entity, ref actionInput);
+        }
+
+        private void SetIdleAction(
             Entity entity,
             ref ActionInputComponent actionInput)
         {
@@ -151,13 +190,14 @@ public partial struct ActionManagerSystem : ISystem
 
         private void SetNextSubAction(
             Entity entity,
-            ref ActionInputComponent actionInput)
+            ref ActionInputComponent actionInput,
+            in NeedBasedSystemOutput needs)
         {
             actionInput.CurrentActionIndex++;
 
             if (ActionsMap.TryGetSubAction(actionInput.Action, actionInput.CurrentActionIndex, out var subAction) == false)
             {
-                ResetMainAction(entity, ref actionInput);
+                ResetMainAction(entity, ref actionInput, needs);
                 return;
             }
 

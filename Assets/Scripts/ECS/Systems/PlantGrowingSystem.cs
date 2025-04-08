@@ -25,21 +25,29 @@ public partial struct PlantGrowingSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         var deltaTime = SystemAPI.Time.DeltaTime;
+        var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
+
+        // Execute jobs directly on the main thread
+        foreach (var (aging, edible, entity) in SystemAPI.Query<RefRW<AgingComponent>, RefRW<EdibleComponent>>().WithEntityAccess())
+        {
+            // Increase wholeness
+            edible.ValueRW.Wholeness = aging.ValueRO.Wholeness - edible.ValueRO.BitenPart;
+            edible.ValueRW.BitenPart = 0;
+            aging.ValueRW.Wholeness = edible.ValueRO.Wholeness;
+
+            if (aging.ValueRO.Wholeness <= 0)
+            {
+                ecb.DestroyEntity(entity);
+            }
+        }
+
+        ecb.Playback(state.EntityManager);
 
         // Execute jobs directly on the main thread
         foreach (var (aging, growing) in SystemAPI.Query<RefRW<AgingComponent>, RefRO<GrowingComponent>>())
         {
             // Increase wholeness based on growth speed
             aging.ValueRW.Wholeness = math.min(aging.ValueRO.Wholeness + growing.ValueRO.GrowthSpeed * deltaTime, growing.ValueRO.MaxWholeness);
-        }
-
-        // Execute jobs directly on the main thread
-        foreach (var (aging, edible) in SystemAPI.Query<RefRW<AgingComponent>, RefRW<EdibleComponent>>())
-        {
-            // Increase wholeness
-            edible.ValueRW.Wholeness = aging.ValueRO.Wholeness - edible.ValueRO.BitenPart;
-            edible.ValueRW.BitenPart = 0;
-            aging.ValueRW.Wholeness = edible.ValueRO.Wholeness;
         }
 
         foreach (var (transform, aging, growing) in
