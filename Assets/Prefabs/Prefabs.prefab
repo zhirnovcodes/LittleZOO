@@ -46,3 +46,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Grass: {fileID: 6214957870219192690, guid: 34aa7c549939cc545aede63c5f3646af, type: 3}
   Pig: {fileID: 9209394379408463921, guid: 23c24860a7cd4cd4eb4119b6e8c05dc6, type: 3}
+  Wolf: {fileID: 4967042744800465126, guid: 758f8ce7ea4dbed46a708d4de780e95e, type: 3}

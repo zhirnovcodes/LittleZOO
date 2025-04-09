@@ -45,6 +45,7 @@ public struct WorldData
 {
     public SpawnData PigsSpawn;
     public SpawnData GrassSpawn;
+    public SpawnData WolfSpawn;
     public int GrassReproductionSteps;
     public float PlanetRadius;
     public float HorizontalDrag;
@@ -104,10 +105,10 @@ public struct GrassAdvertiserData
 {
     public float2 Nutrition;
     public float2 SizeMax;
-    public float2 FullnessValueMin;
-    public float2 FullnessValueMax;
-    public float2 EnergyValueMin;
-    public float2 EnergyValueMax;
+    public float3 FullnessValueMin;
+    public float3 FullnessValueMax;
+    public float3 EnergyValueMin;
+    public float3 EnergyValueMax;
 }
 
 // Pigs Constants Data
@@ -129,6 +130,7 @@ public struct PigsStatsData
     public float2 Size;
     public float2 VisionInterval;
     public float2 VisionRadius;
+    public float2 SafetyInterval;
 }
 
 // Grass Constants Data

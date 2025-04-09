@@ -144,8 +144,14 @@ public partial struct ActionManagerSystem : ISystem
                     ResetMainAction(entity, ref actionInput, needs);
                     break;
                 case ActionStatus.Running:
+                    // TODO cancel action
+                    if (IsPriorityAction(actionInput, needs))
+                    {
+                        ResetMainAction(entity, ref actionInput, needs);
+                    }
                     return;
             }
+
         }
 
         private void ResetMainAction(
@@ -204,6 +210,15 @@ public partial struct ActionManagerSystem : ISystem
             actionInput.TimeElapsed = 0;
 
             ActionsExtentions.SetAction(Ecb, subAction, entity);
+        }
+
+        private bool IsPriorityAction(
+            ActionInputComponent actionInput,
+            NeedBasedSystemOutput needs)
+        {
+            return needs.Action == ActionTypes.Escape && 
+                (actionInput.Action != needs.Action ||
+                actionInput.Target != needs.Advertiser);
         }
     }
 

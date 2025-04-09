@@ -30,6 +30,7 @@ public static class ActionsExtentions
         SetActionDisabled<MovingToStateTag>(entity, commandBuffer);
         SetActionDisabled<SleepingStateTag>(entity, commandBuffer);
         SetActionDisabled<EatingStateTag>(entity, commandBuffer);
+        SetActionDisabled<RunningFromStateTag>(entity, commandBuffer);
         SetActionDisabled<DyingStateTag>(entity, commandBuffer);
     }
 
@@ -65,9 +66,9 @@ public static class ActionsExtentions
             case SubActionTypes.Sleep:
                 SetSleeping(ecb, entity);
                 break;
-            //case SubActionTypes.RunFrom:
-                //SetDying(ecb, entity);
-                //break;
+            case SubActionTypes.RunFrom:
+                SetRunningFrom(ecb, entity);
+                break;
         }
     }
 
@@ -78,6 +79,7 @@ public static class ActionsExtentions
         ecb.SetComponentEnabled<NeedBasedDecisionTag>(entity, true);
         ecb.SetComponentEnabled<HungerComponent>(entity, true);
         ecb.SetComponentEnabled<EnergyComponent>(entity, true);
+        ecb.SetComponentEnabled<SafetyComponent>(entity, true);
 
         ResetMovement(ecb, entity);
 
@@ -95,6 +97,7 @@ public static class ActionsExtentions
         ecb.SetComponentEnabled<NeedBasedDecisionTag>(entity, true);
         ecb.SetComponentEnabled<HungerComponent>(entity, true);
         ecb.SetComponentEnabled<EnergyComponent>(entity, true);
+        ecb.SetComponentEnabled<SafetyComponent>(entity, true);
 
         ResetMovement(ecb, entity);
 
@@ -114,6 +117,7 @@ public static class ActionsExtentions
         ecb.SetComponentEnabled<NeedBasedDecisionTag>(entity, true);
         ecb.SetComponentEnabled<HungerComponent>(entity, true);
         ecb.SetComponentEnabled<EnergyComponent>(entity, true);
+        ecb.SetComponentEnabled<SafetyComponent>(entity, true);
 
         ecb.SetComponentEnabled<ActionInputComponent>(entity, true);
 
@@ -129,6 +133,7 @@ public static class ActionsExtentions
         ecb.SetComponentEnabled<NeedBasedDecisionTag>(entity, true);
         ecb.SetComponentEnabled<HungerComponent>(entity, false);
         ecb.SetComponentEnabled<EnergyComponent>(entity, true);
+        ecb.SetComponentEnabled<SafetyComponent>(entity, true);
 
         ResetMovement(ecb, entity);
 
@@ -146,6 +151,7 @@ public static class ActionsExtentions
         ecb.SetComponentEnabled<NeedBasedDecisionTag>(entity, false);
         ecb.SetComponentEnabled<HungerComponent>(entity, true);
         ecb.SetComponentEnabled<EnergyComponent>(entity, false);
+        ecb.SetComponentEnabled<SafetyComponent>(entity, false);
 
         ResetMovement(ecb, entity);
 
@@ -154,6 +160,23 @@ public static class ActionsExtentions
         SetState<SleepingStateTag>(entity, ecb);
 
         //AnimationExtensions.SetSleepingAnimation(ecb, entity);
+    }
+
+    public static void SetRunningFrom(EntityCommandBuffer ecb, Entity entity)
+    {
+        ResetMovement(ecb, entity);
+
+        ecb.SetComponentEnabled<VisionComponent>(entity, true);
+        ecb.SetComponentEnabled<MovingInputComponent>(entity, true);
+        ecb.SetComponentEnabled<NeedBasedDecisionTag>(entity, true);
+        ecb.SetComponentEnabled<HungerComponent>(entity, true);
+        ecb.SetComponentEnabled<EnergyComponent>(entity, true);
+
+        ecb.SetComponentEnabled<ActionInputComponent>(entity, true);
+
+        SetState<RunningFromStateTag>(entity, ecb);
+
+        //AnimationExtensions.SetDyingAnimation(ecb, entity);
     }
 
     public static void SetDying(EntityCommandBuffer ecb, Entity entity)
@@ -165,6 +188,7 @@ public static class ActionsExtentions
         ecb.SetComponentEnabled<NeedBasedDecisionTag>(entity, false);
         ecb.SetComponentEnabled<HungerComponent>(entity, false);
         ecb.SetComponentEnabled<EnergyComponent>(entity, false);
+        ecb.SetComponentEnabled<SafetyComponent>(entity, false);
 
         ecb.SetComponentEnabled<ActionInputComponent>(entity, false);
 
@@ -211,14 +235,21 @@ public static class NeedsExtentions
     {
         return need.Needs[1];
     }
-
+    public static float Safety(this ActorNeedsComponent need)
+    {
+        return need.Needs[2];
+    }
 
     public static void SetFullness(this ref ActorNeedsComponent need, float value)
     {
-        need.Needs = new float2(value, need.Needs.y);
+        need.Needs = new float3(value, need.Needs.y, need.Needs.z);
     }
     public static void SetEnergy(this ref ActorNeedsComponent need, float value)
     {
-        need.Needs = new float2(need.Needs.x, value);
+        need.Needs = new float3(need.Needs.x, value, need.Needs.z);
+    }
+    public static void SetSafety(this ref ActorNeedsComponent need, float value)
+    {
+        need.Needs = new float3(need.Needs.x, need.Needs.y, value);
     }
 }

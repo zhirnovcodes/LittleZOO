@@ -7,5 +7,5 @@ public struct AdvertisedActionItem : IBufferElementData
 {
     public NeedType NeedId;
     public ActionTypes ActionId;
-    public float2 NeedsMatrix; // X: Fullness, Y: Energy
+    public float3 NeedsMatrix; // X: Fullness, Y: Energy
 }

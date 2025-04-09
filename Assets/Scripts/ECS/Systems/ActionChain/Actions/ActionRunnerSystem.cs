@@ -63,9 +63,18 @@ public partial struct ActionRunnerSystem : ISystem
             SleepableLookup = sleepableLookup
         }.Schedule(movingHandle);
 
+        var runningHandle = new RunningFromActionJob
+        {
+            PlanetPosition = planetTransform.ValueRO.Position,
+            PlanetScale = planetTransform.ValueRO.Scale,
+            TransformLookup = transformLookup
+        }.Schedule(sleepingHandle);
+
         var dependency1 = JobHandle.CombineDependencies
             (idleHandle, eatingHandle, searchHandle);
-        state.Dependency = JobHandle.CombineDependencies(dependency1, movingHandle, sleepingHandle);
+        var dependency2 = JobHandle.CombineDependencies
+            (movingHandle, sleepingHandle, runningHandle);
+        state.Dependency = JobHandle.CombineDependencies(dependency1, dependency2);
     }
 
 
@@ -151,6 +160,8 @@ public partial struct ActionRunnerSystem : ISystem
             if (movingOutput.HasArivedToTarget)
             {
                 output.Status = ActionStatus.Success;
+                movingInput.TargetPosition = GenerateTargetPosition(ref random);
+                return;
             }
 
 
@@ -266,34 +277,83 @@ public partial struct ActionRunnerSystem : ISystem
     {
         public float3 PlanetPosition;
         public float PlanetScale;
+        [ReadOnly] public ComponentLookup<LocalTransform> TransformLookup;
 
-        void Execute(
+        void Execute
+            (
+            Entity actor,
             ref SubActionOutputComponent output,
             ref MovingInputComponent movingInput,
             ref ActorRandomComponent random,
             in MovingOutputComponent movingOutput,
+            in ActionInputComponent input,
             in MovingSpeedComponent movingSpeed,
-            in RunningFromStateTag tag)
+            in ActorNeedsComponent needs,
+            in DynamicBuffer<VisionItem> vision,
+            in RunningFromStateTag tag
+            )
         {
+            if (TransformLookup.TryGetComponent(input.Target, out var targetTransform) == false)
+            {
+                output.Status = ActionStatus.Success;
+                return;
+            }
+
             if (movingOutput.NoTargetSet)
             {
-                movingInput.TargetPosition = GenerateTargetPosition(ref random);
+                movingInput.TargetPosition = GenerateTargetPosition(ref random, actor, targetTransform);
                 movingInput.TargetScale = 0;
-                movingInput.Speed = (movingSpeed.SpeedRange.x + movingSpeed.SpeedRange.y) / 2f;
+                movingInput.Speed = movingSpeed.SpeedRange.y;
+                return;
+            }
+
+            if (IsSafe(needs) || (SeeTarget(vision, input.Target) == false))
+            {
+                output.Status = ActionStatus.Success;
                 return;
             }
 
             if (movingOutput.HasArivedToTarget)
             {
-                output.Status = ActionStatus.Success;
+                movingInput.TargetPosition = GenerateTargetPosition(ref random, actor, targetTransform);
+                movingInput.TargetScale = 0;
+                movingInput.Speed = movingSpeed.SpeedRange.y;
+                return;
             }
         }
 
-        // Helper method for generating target positions
-        private float3 GenerateTargetPosition(ref ActorRandomComponent random)
+        private bool IsSafe(ActorNeedsComponent needs)
         {
-            float3 randomTarget = random.Random.NextFloat3(new float3(-1, -1, -1), new float3(1, 1, 1));
-            return PlanetPosition + math.normalize(randomTarget) * PlanetScale / 2f;
+            return needs.Safety() >= 100;
+        }
+
+        private bool SeeTarget(DynamicBuffer<VisionItem> vision, Entity target)
+        {
+            foreach (var visible in vision)
+            {
+                if (target == visible.VisibleEntity)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // Helper method for generating target positions
+        private float3 GenerateTargetPosition(ref ActorRandomComponent random, Entity actor, LocalTransform targetTransform)
+        {
+            var actorTransform = TransformLookup[actor];
+
+            var direction = math.normalize(actorTransform.Position - targetTransform.Position);
+
+            // TODO to config
+            var distance = random.Random.NextFloat(1f, 5f);
+            var destinationOuter = direction * distance + actorTransform.Position;
+
+            var destinationOnPlanet = math.normalize(destinationOuter - PlanetPosition) * PlanetScale / 2f;
+
+            return destinationOnPlanet + PlanetPosition;
         }
     }
 }

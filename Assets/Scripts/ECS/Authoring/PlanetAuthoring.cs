@@ -17,7 +17,7 @@ public class PlanetAuthoring : MonoBehaviour
             {
                 ActionId = Zoo.Enums.ActionTypes.Search,
                 NeedId = Zoo.Enums.NeedType.Fullness,
-                NeedsMatrix = new float2 { x = 1f, y = 0f}
+                NeedsMatrix = new float3 { x = 1f, y = 0f, z = 0}
             }) ;
         }
     }

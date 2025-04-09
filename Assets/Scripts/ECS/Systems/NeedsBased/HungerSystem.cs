@@ -1,7 +1,6 @@
 using Unity.Burst;
 using Unity.Entities;
 
-
 [BurstCompile]
 [UpdateInGroup(typeof(BiologicalSystemGroup))]
 public partial struct HungerSystem : ISystem

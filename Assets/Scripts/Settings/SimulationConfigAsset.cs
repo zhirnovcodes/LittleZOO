@@ -13,6 +13,7 @@ public class SimulationConfigAsset : ScriptableObject
     public Vector2Int PigsCount = new Vector2Int(10, 20);
     public Vector2 PigsSpawnHeight = new Vector2(0.5f, 1.5f);
     public Vector2Int GrassCount = new Vector2Int(50, 100);
+    public Vector2Int WolvesCount = new Vector2Int(1, 2);
     public int GrassReproductionSteps = 10;
 
     // Physics section
@@ -31,10 +32,10 @@ public class SimulationConfigAsset : ScriptableObject
     // Advertisers section
     [Header("Grass Advertiser")]
     public Vector2 grassSizeMax = new Vector2(0.5f, 1.5f);
-    public Vector2 grassFullnessAdvertisedMin = new Vector2(-0.1f, 1f);
-    public Vector2 grassFullnessAdvertisedMax = new Vector2(-0.1f, 1f);
-    public Vector2 grassEnergyAdvertisedMin = new Vector2(0.1f, -1f);
-    public Vector2 grassEnergyAdvertisedMax = new Vector2(0.1f, -1f);
+    public Vector3 grassFullnessAdvertisedMin = new Vector3(-0.1f, 1f, 0);
+    public Vector3 grassFullnessAdvertisedMax = new Vector3(-0.1f, 1f, 0);
+    public Vector3 grassEnergyAdvertisedMin = new Vector3(0.1f, -1f, 0);
+    public Vector3 grassEnergyAdvertisedMax = new Vector3(0.1f, -1f, 0);
 
     // Actors constants section
     [Header("Pig Constants")]
@@ -70,6 +71,7 @@ public class SimulationConfigAsset : ScriptableObject
     public Vector2 EnergyNaturalDecay = new Vector2(0.005f, 0.02f);
     public Vector2 FullnessDecayByDistance = new Vector2(0.02f, 0.1f);
     public Vector2 EnergyDecayByDistance = new Vector2(0.01f, 0.4f);
+    public Vector2 safetyInterval = new Vector2(0.2f, 1f);
 
     // Convert to SimulationSettings struct
     public SimulationSettings ToSimulationSettings(in PrefabsLibraryComponent library)
@@ -98,6 +100,11 @@ public class SimulationConfigAsset : ScriptableObject
                 {
                     Prefab = library.Grass,
                     Count = new int2(GrassCount.x, GrassCount.y),
+                },
+                WolfSpawn = new SpawnData
+                {
+                    Prefab = library.Wolf,
+                    Count = new int2(WolvesCount.x, WolvesCount.y),
                 },
                 GrassReproductionSteps = GrassReproductionSteps,
                 PlanetRadius = PlanetRadius,
@@ -144,7 +151,8 @@ public class SimulationConfigAsset : ScriptableObject
                         SpeedMax = pigSpeedMax,
                         Size = new float2(pigSize.x, pigSize.y),
                         VisionInterval = new float2(visionInterval.x, visionInterval.y),
-                        VisionRadius = new float2(visionRadius.x, visionRadius.y)
+                        VisionRadius = new float2(visionRadius.x, visionRadius.y),
+                        SafetyInterval = safetyInterval
                     }
                 }
             },

@@ -31,6 +31,6 @@ public struct GrassDNAComponent : IComponentData
     public float ReproductiveChance;
 
     // Advertising values
-    public float2 AdvertisedFullness;
-    public float2 AdvertisedEnergy;
+    public float3 AdvertisedFullness;
+    public float3 AdvertisedEnergy;
 }

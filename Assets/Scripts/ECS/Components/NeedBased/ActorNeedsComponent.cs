@@ -3,5 +3,5 @@ using Unity.Mathematics;
 
 public struct ActorNeedsComponent : IComponentData
 {
-    public float2 Needs;
+    public float3 Needs;
 }

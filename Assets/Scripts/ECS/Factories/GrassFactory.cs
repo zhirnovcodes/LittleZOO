@@ -240,9 +240,19 @@ public static class GrassFactory
         return random.NextFloat(deviation.x, deviation.y) * oldValue;
     }
 
+    private static float3 GetRandomVariationWithDeviation(ref Random random, float3 oldValue, float2 deviation)
+    {
+        return random.NextFloat(deviation.x, deviation.y) * oldValue;
+    }
+
     private static float2 GetRandomVariation(ref Random random, float2 min, float2 max)
     {
         return random.NextFloat2(min, max);
+    }
+
+    private static float3 GetRandomVariation(ref Random random, float3 min, float3 max)
+    {
+        return random.NextFloat3(min, max);
     }
 
     private static float GetRandomVariation(ref Random random, float2 minMax)

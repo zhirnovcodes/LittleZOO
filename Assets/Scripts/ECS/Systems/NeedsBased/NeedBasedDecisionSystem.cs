@@ -67,6 +67,7 @@ public partial struct NeedBasedDecisionSystem : ISystem
             in EnergyComponent energy,
             [ReadOnly] in DynamicBuffer<VisionItem> visibleEntities)
         {
+            // TODO hunger or energy consts instead of HungerComponent & EnergyComponent
             const float interval = 1f;
 
             if (tag.TimeElapsed < interval)
@@ -85,7 +86,7 @@ public partial struct NeedBasedDecisionSystem : ISystem
             Entity bestAdvertiser = Entity.Null;
             ActionTypes bestAction = ActionTypes.Idle;
 
-            float2 bestNeed = float2.zero;
+            float3 bestNeed = float3.zero;
             float bestDuration = 0;
 
             // --- Visible Entity Checks ---
@@ -103,18 +104,24 @@ public partial struct NeedBasedDecisionSystem : ISystem
 
                 foreach (var ad in ads)
                 {
-                    float2 resultNeeds = needs.Needs + ad.NeedsMatrix;
-                    float performTime = EstimatePerformTime(resultNeeds, needs, hunger, energy, ad.NeedsMatrix);
+                    float3 resultNeeds = needs.Needs + ad.NeedsMatrix;
+                    float performTime = 0;
+
+                    if (ad.NeedId == NeedType.Safety == false)
+                    {
+                        performTime = EstimatePerformTime(resultNeeds, needs, hunger, energy, ad.NeedsMatrix);
+                    }
 
                     float clampedFullness = math.clamp(resultNeeds.x, 0, 100);
                     float clampedEnergy = math.clamp(resultNeeds.y, 0, 100);
+                    float clampedSafety = math.clamp(resultNeeds.z, 0, 100);
 
-                    float score = clampedFullness + clampedEnergy;
+                    float score = clampedFullness + clampedEnergy + clampedSafety;
 
                     // Apply distance attenuation
                     float distanceAttenuation = hunger.FullnessDecayByDistance * distance +
-                        energy.EnergyDecayByDistance * distance;
-                    score -= distanceAttenuation; // avoid divide by 0
+                    energy.EnergyDecayByDistance * distance;
+                    score -= distanceAttenuation;
 
                     if (score > bestScore)
                     {
@@ -132,13 +139,14 @@ public partial struct NeedBasedDecisionSystem : ISystem
             {
                 foreach (var ad in planetAds)
                 {
-                    float2 resultNeeds = needs.Needs + ad.NeedsMatrix;
+                    float3 resultNeeds = needs.Needs + ad.NeedsMatrix;
                     float performTime = EstimatePerformTime(resultNeeds, needs, hunger, energy, ad.NeedsMatrix);
 
                     float clampedFullness = math.clamp(resultNeeds.x, 0, 100);
                     float clampedEnergy = math.clamp(resultNeeds.y, 0, 100);
+                    float clampedSafety = math.clamp(resultNeeds.z, 0, 100);
 
-                    float score = clampedFullness + clampedEnergy;
+                    float score = clampedFullness + clampedEnergy + clampedSafety;
 
                     if (score > bestScore)
                     {
@@ -154,7 +162,8 @@ public partial struct NeedBasedDecisionSystem : ISystem
             // --- IDLE Check ---
             float idleFullness = needs.Fullness() - (hunger.FullnessDecaySpeed * bestDuration);
             float idleEnergy = needs.Energy() - (energy.EnergyDecaySpeed * bestDuration);
-            float idleScore = math.clamp(idleFullness, 0, 100) + math.clamp(idleEnergy, 0, 100);
+            float idleSafety = needs.Safety();
+            float idleScore = math.clamp(idleFullness, 0, 100) + math.clamp(idleEnergy, 0, 100) + math.clamp(idleSafety, 0, 100);
 
             if (idleScore > bestScore)
             {
@@ -174,9 +183,9 @@ public partial struct NeedBasedDecisionSystem : ISystem
             return size * angle / 2;
         }
 
-        float EstimatePerformTime(float2 resultingNeeds, in ActorNeedsComponent current, in HungerComponent hunger, in EnergyComponent energy, float2 needGainRate)
+        float EstimatePerformTime(float3 resultingNeeds, in ActorNeedsComponent current, in HungerComponent hunger, in EnergyComponent energy, float3 needGainRate)
         {
-            float2 delta = resultingNeeds - current.Needs;
+            float3 delta = resultingNeeds - current.Needs;
 
             float timeFullness = delta.x / math.max(0.001f, needGainRate.x - hunger.FullnessDecaySpeed);
             float timeEnergy = delta.y / math.max(0.001f, needGainRate.y - energy.EnergyDecaySpeed);

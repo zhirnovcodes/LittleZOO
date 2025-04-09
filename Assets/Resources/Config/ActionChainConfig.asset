@@ -21,3 +21,5 @@ MonoBehaviour:
     SubActions: 0200000004000000
   - ActionType: 3
     SubActions: 0200000005000000
+  - ActionType: 4
+    SubActions: 03000000

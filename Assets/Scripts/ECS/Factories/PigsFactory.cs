@@ -19,13 +19,14 @@ public static class PigsFactory
         commandBuffer.AddComponent(newPig, new ActorRandomComponent { Random = Random.CreateFromIndex(random.ValueRW.Random.NextUInt()) });
 
         //var dna = CreatePigsDNA(in settings, ref random.ValueRW.Random);
+        commandBuffer.AddComponent(newPig, new ActorTypeComponent { Type = ActorsType.Pig });
 
         // Needs
         var hungerDecayFator = MathExtentions.GetRandomVariation(ref random.ValueRW.Random, settings.Needs.FullnessDecayByDistance);
         var energyDecayFator = MathExtentions.GetRandomVariation(ref random.ValueRW.Random, settings.Needs.EnergyDecayByDistance);
         var fullness = MathExtentions.GetRandom100(ref random.ValueRW.Random);
         var energy = MathExtentions.GetRandom100(ref random.ValueRW.Random);
-        var need = new float2(fullness, energy);
+        var need = new float3(fullness, energy, 100);
 
         commandBuffer.AddComponent(newPig, new ActorNeedsComponent
         {
@@ -55,6 +56,7 @@ public static class PigsFactory
         var fullnessNaturalDecay = MathExtentions.GetRandomVariation(ref random.ValueRW.Random, settings.Needs.FullnessNaturalDecay);
         var energyDecayByDistance = MathExtentions.GetRandomVariation(ref random.ValueRW.Random, settings.Needs.EnergyDecayByDistance);
         var energyNaturalDecay = MathExtentions.GetRandomVariation(ref random.ValueRW.Random, settings.Needs.EnergyNaturalDecay);
+        var safetyInterval = MathExtentions.GetRandomVariation(ref random.ValueRW.Random, settings.Actors.Pigs.Stats.SafetyInterval);
 
         commandBuffer.AddComponent(newPig, new HungerComponent 
         { 
@@ -66,6 +68,11 @@ public static class PigsFactory
         {
             EnergyDecayByDistance = energyDecayByDistance,
             EnergyDecaySpeed = energyNaturalDecay
+        });
+
+        commandBuffer.AddComponent(newPig, new SafetyComponent
+        {
+            CheckInterval = safetyInterval
         });
 
         // States
@@ -82,6 +89,7 @@ public static class PigsFactory
             BiteWholeness = biteWholeness
         });
         commandBuffer.AddComponent(newPig, new SleepingStateTag());
+        commandBuffer.AddComponent(newPig, new RunningFromStateTag());
         commandBuffer.AddComponent(newPig, new DyingStateTag());
 
         commandBuffer.AddComponent(newPig, new ActionInputComponent ());

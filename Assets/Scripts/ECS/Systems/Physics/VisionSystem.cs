@@ -119,7 +119,7 @@ public partial class VisionSystem : SystemBase
                 visionItems.Add(new VisionItem
                 {
                     VisibleEntity = hit.Entity
-                }); ;
+                });
 
                 if (visionItems.Length >= capacity)
                 {

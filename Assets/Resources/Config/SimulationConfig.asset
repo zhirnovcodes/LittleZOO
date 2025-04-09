@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2417a82d616fc7e4fa3d8fd221ed1afa, type: 3}
   m_Name: SimulationConfig
   m_EditorClassIdentifier: 
-  PigsCount: {x: 1, y: 1}
+  PigsCount: {x: 50, y: 100}
   PigsSpawnHeight: {x: 0.5, y: 1.5}
   GrassCount: {x: 50, y: 100}
+  WolvesCount: {x: 3, y: 5}
   GrassReproductionSteps: 10
   PlanetRadius: 50
   HorizontalDrag: 0.3
@@ -24,10 +25,10 @@ MonoBehaviour:
   searchMinValuableFullness: {x: 0.3, y: 0.6}
   minValuableEnergy: {x: 5, y: 10}
   grassSizeMax: {x: 0.5, y: 1.5}
-  grassFullnessAdvertisedMin: {x: 20, y: 0}
-  grassFullnessAdvertisedMax: {x: 60, y: 0}
-  grassEnergyAdvertisedMin: {x: 0, y: 6}
-  grassEnergyAdvertisedMax: {x: 0, y: 12}
+  grassFullnessAdvertisedMin: {x: 20, y: 0, z: 0}
+  grassFullnessAdvertisedMax: {x: 60, y: 0, z: 0}
+  grassEnergyAdvertisedMin: {x: 0, y: 6, z: 0}
+  grassEnergyAdvertisedMax: {x: 0, y: 12, z: 0}
   foodPreference: 1
   pigSpeedMin: {x: 1, y: 3}
   pigSpeedMax: {x: 1, y: 3}
@@ -52,3 +53,4 @@ MonoBehaviour:
   EnergyNaturalDecay: {x: 0.005, y: 0.02}
   FullnessDecayByDistance: {x: 0.02, y: 0.1}
   EnergyDecayByDistance: {x: 0.01, y: 0.4}
+  safetyInterval: {x: 0.2, y: 1}
