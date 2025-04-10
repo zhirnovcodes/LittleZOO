@@ -1,6 +1,7 @@
 ﻿using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 using Random = Unity.Mathematics.Random;
 // System that handles initial grass spawning - updated for main thread execution
 [UpdateInGroup(typeof(InitializationSystemGroup))]
@@ -71,8 +72,11 @@ public partial struct GrassSpawnSystem : ISystem
             // Mark this triangle as occupied
             occupiedTriangles[triangleIndex] = true;
 
+            var ageSpan = new float2(0, config.BlobReference.Value.Entities.Grass.Stats.AgingFunctionSpan.y);
+            var age = MathExtentions.GetRandomVariation(ref random.Random, ageSpan);
+
             // Create a new grass entity
-            GrassFactory.CreateRandomGrass(ecb, triangleIndex, ref random.Random, in icosphere, prefab, in config);
+            GrassFactory.CreateRandomGrass(ecb, triangleIndex, ref random.Random, in icosphere, prefab, in config, age);
         }
 
         // Simulate grass spread across the planet
@@ -136,7 +140,10 @@ public partial struct GrassSpawnSystem : ISystem
                 occupiedTriangles[triangleId] = true;
 
                 // Create a new grass entity
-                GrassFactory.CreateRandomGrass(ecb, triangleId, ref random, icosphere, prefab, in config);
+                var ageSpan = new float2(0, config.BlobReference.Value.Entities.Grass.Stats.AgingFunctionSpan.y);
+                var age = MathExtentions.GetRandomVariation(ref random, ageSpan);
+
+                GrassFactory.CreateRandomGrass(ecb, triangleId, ref random, icosphere, prefab, in config, age);
             }
 
             newTriangles.Dispose();

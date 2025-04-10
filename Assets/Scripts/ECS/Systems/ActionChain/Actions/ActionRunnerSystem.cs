@@ -28,9 +28,8 @@ public partial struct ActionRunnerSystem : ISystem
         var planetEntity = SystemAPI.GetSingletonEntity<PlanetComponent>();
         var planetTransform = SystemAPI.GetComponentRO<LocalTransform>(planetEntity);
 
-        var transformLookup = SystemAPI.GetComponentLookup<LocalTransform>();
-        var edibleLookup = SystemAPI.GetComponentLookup<EdibleComponent>();
-        var sleepableLookup = SystemAPI.GetComponentLookup<SleepableComponent>();
+        var transformLookup = SystemAPI.GetComponentLookup<LocalTransform>(true);
+        var sleepableLookup = SystemAPI.GetComponentLookup<SleepableComponent>(true);
 
         var deltaTime = SystemAPI.Time.DeltaTime;
 
@@ -42,7 +41,7 @@ public partial struct ActionRunnerSystem : ISystem
         var eatingHandle = new EatingActionJob
         {
             DeltaTime = deltaTime,
-            EdibleLookup = edibleLookup
+            TransformLookup = transformLookup
         }.Schedule(idleHandle);
 
         var searchHandle = new SearchingActionJob
@@ -52,16 +51,21 @@ public partial struct ActionRunnerSystem : ISystem
             TransformLookup = transformLookup
         }.Schedule(eatingHandle);
 
-        var movingHandle = new MovingToActionJob
+        var movingToHandle = new MovingToActionJob
         {
             TransformLookup = transformLookup
         }.Schedule(searchHandle);
+
+        var movingIntoHandle = new MovingIntoActionJob
+        {
+            TransformLookup = transformLookup
+        }.Schedule(movingToHandle);
 
         var sleepingHandle = new SleepingActionJob
         {
             DeltaTime = deltaTime,
             SleepableLookup = sleepableLookup
-        }.Schedule(movingHandle);
+        }.Schedule(movingIntoHandle);
 
         var runningHandle = new RunningFromActionJob
         {
@@ -73,8 +77,9 @@ public partial struct ActionRunnerSystem : ISystem
         var dependency1 = JobHandle.CombineDependencies
             (idleHandle, eatingHandle, searchHandle);
         var dependency2 = JobHandle.CombineDependencies
-            (movingHandle, sleepingHandle, runningHandle);
-        state.Dependency = JobHandle.CombineDependencies(dependency1, dependency2);
+            (movingToHandle, sleepingHandle, runningHandle);
+        var dependency3 = movingIntoHandle;
+        state.Dependency = JobHandle.CombineDependencies( dependency1, dependency2, dependency3);
     }
 
 
@@ -104,6 +109,44 @@ public partial struct ActionRunnerSystem : ISystem
     }
 
 
+    public partial struct MovingIntoActionJob : IJobEntity
+    {
+        [ReadOnly] public ComponentLookup<LocalTransform> TransformLookup;
+
+        void Execute(
+            ref SubActionOutputComponent output,
+            ref MovingInputComponent movingInput,
+            in MovingOutputComponent movingOutput,
+            in MovingSpeedComponent movingSpeed,
+            in ActionInputComponent actionInput,
+            in MovingIntoStateTag tag)
+        {
+            const float stopTime = 10f;
+            if (actionInput.TimeElapsed >= stopTime)
+            {
+                output.Status = ActionStatus.Fail;
+                return;
+            }
+
+            if (movingOutput.HasArivedToTarget)
+            {
+                output.Status = ActionStatus.Success;
+                return;
+            }
+
+            if (TransformLookup.TryGetComponent(actionInput.Target, out var transform) == false)
+            {
+                output.Status = ActionStatus.Fail;
+                return;
+            }
+
+            movingInput.TargetPosition = transform.Position;
+            movingInput.TargetScale = 0;
+            movingInput.Speed = (movingSpeed.SpeedRange.x + movingSpeed.SpeedRange.y) / 2f;
+        }
+    }
+
+
     public partial struct MovingToActionJob : IJobEntity
     {
         [ReadOnly] public ComponentLookup<LocalTransform> TransformLookup;
@@ -116,6 +159,13 @@ public partial struct ActionRunnerSystem : ISystem
             in ActionInputComponent actionInput,
             in MovingToStateTag tag)
         {
+            const float stopTime = 10f;
+            if (actionInput.TimeElapsed >= stopTime)
+            {
+                output.Status = ActionStatus.Fail;
+                return;
+            }
+
             if (movingOutput.HasArivedToTarget)
             {
                 output.Status = ActionStatus.Success;
@@ -191,7 +241,7 @@ public partial struct ActionRunnerSystem : ISystem
     public partial struct SleepingActionJob : IJobEntity
     {
         public float DeltaTime;
-        public ComponentLookup<SleepableComponent> SleepableLookup;
+        [ReadOnly] public ComponentLookup<SleepableComponent> SleepableLookup;
 
         void Execute(
             ref SubActionOutputComponent output,
@@ -207,7 +257,7 @@ public partial struct ActionRunnerSystem : ISystem
 
             var energyIncrease = sleepable.EnergyIncreaseSpeed * DeltaTime;
 
-            needs.SetEnergy(math.min(100, needs.Energy() + energyIncrease));
+            needs.AddEnergy(energyIncrease);
 
             if (needs.Energy() >= 100)
             {
@@ -219,14 +269,22 @@ public partial struct ActionRunnerSystem : ISystem
     public partial struct EatingActionJob : IJobEntity
     {
         public float DeltaTime;
-        public ComponentLookup<EdibleComponent> EdibleLookup;
+        [ReadOnly] public ComponentLookup<LocalTransform> TransformLookup;
 
         void Execute(
+            Entity actor,
             ref SubActionOutputComponent output,
             ref ActorNeedsComponent needs,
             ref EatingStateTag tag,
+            ref DynamicBuffer<BiteItem> biteBuffer,
             in ActionInputComponent input)
         {
+            if (TransformLookup.HasComponent(input.Target) == false)
+            {
+                output.Status = ActionStatus.Success;
+                return;
+            }
+
             if (tag.BiteTimeElapsed < tag.BiteInterval)
             {
                 tag.BiteTimeElapsed += DeltaTime;
@@ -235,41 +293,13 @@ public partial struct ActionRunnerSystem : ISystem
 
             tag.BiteTimeElapsed = 0;
 
-            if (EdibleLookup.TryGetComponent(input.Target, out var _) == false)
-            {
-                output.Status = ActionStatus.Fail;
-                return;
-            }
-
-
-            if (Bite(ref needs, input.Target, tag.BiteWholeness))
-            {
-                output.Status = ActionStatus.Success;
-                return;
-            }
-
             if (needs.Fullness() >= 100)
             {
                 output.Status = ActionStatus.Success;
                 return;
             }
-        }
 
-        private bool Bite(ref ActorNeedsComponent needs, Entity target, float wholeness)
-        {
-            var edibleComponent = EdibleLookup.GetRefRW(target);
-
-            var oldWholeness = edibleComponent.ValueRO.Wholeness;
-            var biteValue = math.min(wholeness, oldWholeness);
-
-            var nutritiousAll = edibleComponent.ValueRO.Nutrition;
-
-            var nutritiousValue = biteValue * nutritiousAll / 100f;
-
-            needs.SetFullness(math.min(100, needs.Fullness() + nutritiousValue));
-            edibleComponent.ValueRW.BitenPart += biteValue;
-
-            return oldWholeness - biteValue <= 0;
+            biteBuffer.Add(new BiteItem { Target = input.Target, Wholeness = tag.BiteWholeness });
         }
     }
 

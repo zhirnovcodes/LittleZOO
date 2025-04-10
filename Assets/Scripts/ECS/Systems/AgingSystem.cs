@@ -1,6 +1,7 @@
 ﻿using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
+
 // System that handles plant aging and death - updated for main thread execution
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [BurstCompile]

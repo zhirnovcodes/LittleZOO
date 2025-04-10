@@ -14,6 +14,7 @@ namespace Zoo.Enums
         Idle,
         Search,
         MoveTo,
+        MoveInto,
         RunFrom,
         Eat,
         Sleep

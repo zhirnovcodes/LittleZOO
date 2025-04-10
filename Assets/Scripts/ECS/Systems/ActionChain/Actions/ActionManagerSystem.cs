@@ -5,6 +5,7 @@ using Unity.Jobs;
 using Unity.Transforms;
 using Zoo.Enums;
 
+
 [BurstCompile]
 [UpdateInGroup(typeof(AISystemGroup))]
 public partial struct ActionManagerSystem : ISystem

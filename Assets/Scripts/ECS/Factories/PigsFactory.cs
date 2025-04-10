@@ -75,6 +75,8 @@ public static class PigsFactory
             CheckInterval = safetyInterval
         });
 
+        commandBuffer.AddBuffer<BiteItem>(newPig);
+
         // States
         var biteInterval = MathExtentions.GetRandomVariation(ref random.ValueRW.Random, settings.Actions.Pigs.EatInterval);
         var biteWholeness = MathExtentions.GetRandomVariation(ref random.ValueRW.Random, settings.Actions.Pigs.BiteWholeness);
@@ -83,6 +85,7 @@ public static class PigsFactory
         commandBuffer.AddComponent(newPig, new IdleStateTag());
         commandBuffer.AddComponent(newPig, new SearchingStateTag());
         commandBuffer.AddComponent(newPig, new MovingToStateTag());
+        commandBuffer.AddComponent(newPig, new MovingIntoStateTag());
         commandBuffer.AddComponent(newPig, new EatingStateTag 
         {
             BiteInterval = biteInterval,
@@ -102,6 +105,7 @@ public static class PigsFactory
         //Animations
 
         ActionsExtentions.SetAction(commandBuffer, Zoo.Enums.SubActionTypes.Idle, newPig);
+
 
     }
 

@@ -28,6 +28,7 @@ public static class ActionsExtentions
         SetActionDisabled<IdleStateTag>(entity, commandBuffer);
         SetActionDisabled<SearchingStateTag>(entity, commandBuffer);
         SetActionDisabled<MovingToStateTag>(entity, commandBuffer);
+        SetActionDisabled<MovingIntoStateTag>(entity, commandBuffer);
         SetActionDisabled<SleepingStateTag>(entity, commandBuffer);
         SetActionDisabled<EatingStateTag>(entity, commandBuffer);
         SetActionDisabled<RunningFromStateTag>(entity, commandBuffer);
@@ -55,7 +56,10 @@ public static class ActionsExtentions
                 SetIdle(ecb, entity);
                 break;
             case SubActionTypes.MoveTo:
-                SetMoving(ecb, entity);
+                SetMovingTo(ecb, entity);
+                break;
+            case SubActionTypes.MoveInto:
+                SetMovingInto(ecb, entity);
                 break;
             case SubActionTypes.Search:
                 SetSearching(ecb, entity);
@@ -90,7 +94,7 @@ public static class ActionsExtentions
         //AnimationExtensions.SetIdleAnimation(ecb, entity);
     }
 
-    public static void SetMoving(EntityCommandBuffer ecb, Entity entity)
+    public static void SetMovingTo(EntityCommandBuffer ecb, Entity entity)
     {
         ecb.SetComponentEnabled<VisionComponent>(entity, true);
         ecb.SetComponentEnabled<MovingInputComponent>(entity, true);
@@ -104,6 +108,24 @@ public static class ActionsExtentions
         ecb.SetComponentEnabled<ActionInputComponent>(entity, true);
 
         SetState<MovingToStateTag>(entity, ecb);
+
+        //AnimationExtensions.SetIdleAnimation(ecb, entity);
+    }
+
+    public static void SetMovingInto(EntityCommandBuffer ecb, Entity entity)
+    {
+        ecb.SetComponentEnabled<VisionComponent>(entity, true);
+        ecb.SetComponentEnabled<MovingInputComponent>(entity, true);
+        ecb.SetComponentEnabled<NeedBasedDecisionTag>(entity, true);
+        ecb.SetComponentEnabled<HungerComponent>(entity, true);
+        ecb.SetComponentEnabled<EnergyComponent>(entity, true);
+        ecb.SetComponentEnabled<SafetyComponent>(entity, true);
+
+        ResetMovement(ecb, entity);
+
+        ecb.SetComponentEnabled<ActionInputComponent>(entity, true);
+
+        SetState<MovingIntoStateTag>(entity, ecb);
 
         //AnimationExtensions.SetIdleAnimation(ecb, entity);
     }
@@ -171,6 +193,7 @@ public static class ActionsExtentions
         ecb.SetComponentEnabled<NeedBasedDecisionTag>(entity, true);
         ecb.SetComponentEnabled<HungerComponent>(entity, true);
         ecb.SetComponentEnabled<EnergyComponent>(entity, true);
+        ecb.SetComponentEnabled<SafetyComponent>(entity, true);
 
         ecb.SetComponentEnabled<ActionInputComponent>(entity, true);
 
@@ -251,5 +274,14 @@ public static class NeedsExtentions
     public static void SetSafety(this ref ActorNeedsComponent need, float value)
     {
         need.Needs = new float3(need.Needs.x, need.Needs.y, value);
+    }
+
+    public static void AddFullness(this ref ActorNeedsComponent need, float value)
+    {
+        need.SetFullness(math.min(100, value + need.Fullness()));
+    }
+    public static void AddEnergy(this ref ActorNeedsComponent need, float value)
+    {
+        need.SetEnergy(math.min(100, value + need.Energy()));
     }
 }

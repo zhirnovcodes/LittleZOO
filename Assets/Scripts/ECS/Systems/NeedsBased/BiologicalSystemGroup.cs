@@ -1,6 +1,6 @@
 ﻿using Unity.Entities;
 
-[UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
+[UpdateInGroup(typeof(VariableRateSimulationSystemGroup))]
 public partial class BiologicalSystemGroup : ComponentSystemGroup
 {
 }

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   PigsCount: {x: 50, y: 100}
   PigsSpawnHeight: {x: 0.5, y: 1.5}
-  GrassCount: {x: 50, y: 100}
+  GrassCount: {x: 50, y: 200}
   WolvesCount: {x: 3, y: 5}
   GrassReproductionSteps: 10
   PlanetRadius: 50
@@ -35,11 +35,11 @@ MonoBehaviour:
   pigSize: {x: 0.8, y: 1.2}
   visionInterval: {x: 0.2, y: 0.5}
   visionRadius: {x: 5, y: 10}
-  grassSize: {x: 0.2, y: 0.5}
+  grassSize: {x: 0.2, y: 1}
   grassWholenessMin: {x: 1, y: 100}
   grassWholenessMax: {x: 1, y: 100}
   grassStatNutrition: {x: 50, y: 100}
-  grassGrowthSpeed: {x: 5, y: 60}
+  grassGrowthSpeed: {x: 0.001, y: 0.01}
   grassAgingSpan: {x: 50, y: 100}
   grassAgingFunctionHeight: {x: 0.02, y: 1}
   grassReproductionInterval: {x: 0.5, y: 4}

@@ -24,25 +24,41 @@ public partial struct PlantGrowingSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        var deltaTime = SystemAPI.Time.DeltaTime;
-        var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
+        //var deltaTime = SystemAPI.Time.DeltaTime;
+        //var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
+
+        var transfromLookup = SystemAPI.GetComponentLookup<LocalTransform>();
 
         // Execute jobs directly on the main thread
-        foreach (var (aging, edible, entity) in SystemAPI.Query<RefRW<AgingComponent>, RefRW<EdibleComponent>>().WithEntityAccess())
+        foreach (var (aging, edible, growing, children, entity) in 
+            SystemAPI.Query<
+                    RefRO<AgingComponent>, 
+                    RefRW<EdibleComponent>, 
+                    RefRO<GrowingComponent>,
+                    DynamicBuffer<Child>
+                >().
+                WithEntityAccess())
         {
-            // Increase wholeness
-            edible.ValueRW.Wholeness = aging.ValueRO.Wholeness - edible.ValueRO.BitenPart;
-            edible.ValueRW.BitenPart = 0;
-            aging.ValueRW.Wholeness = edible.ValueRO.Wholeness;
+            var lifespan = aging.ValueRO.AgeElapsed;
+            var function = math.clamp( lifespan * growing.ValueRO.GrowthSpeed, 0, 1);
+            var size = math.lerp(growing.ValueRO.Size.x, growing.ValueRO.Size.y, function);
+            size -= 1 - edible.ValueRO.Wholeness / 100f;
+            size = math.max(growing.ValueRO.Size.x, size);
 
-            if (aging.ValueRO.Wholeness <= 0)
+            var nutrition = math.lerp(edible.ValueRO.NutritionRange.x, edible.ValueRO.NutritionRange.y, function);
+
+            edible.ValueRW.Nutrition = nutrition;
+
+            foreach (var child in children)
             {
-                ecb.DestroyEntity(entity);
+                var scaling = child.Value;
+                transfromLookup[scaling] = transfromLookup[scaling].WithScale(size);
+                break;
             }
         }
 
-        ecb.Playback(state.EntityManager);
-
+        //ecb.Playback(state.EntityManager);
+        /*
         // Execute jobs directly on the main thread
         foreach (var (aging, growing) in SystemAPI.Query<RefRW<AgingComponent>, RefRO<GrowingComponent>>())
         {
@@ -67,7 +83,7 @@ public partial struct PlantGrowingSystem : ISystem
         {
             // Calculate nutrition based on wholeness
             float nutritionFactor = aging.ValueRO.Wholeness / 100f;
-            edible.ValueRW.Nutrition = edible.ValueRO.MaxNutrition * nutritionFactor;
-        }
+            edible.ValueRW.NutritionRange = edible.ValueRO.MaxNutrition * nutritionFactor;
+        }*/
     }
 }

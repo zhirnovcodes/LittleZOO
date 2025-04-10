@@ -2,8 +2,8 @@
 using Unity.Entities;
 using Unity.Transforms;
 
-[UpdateInGroup(typeof(SimulationSystemGroup))]
-[UpdateBefore(typeof(TransformSystemGroup))]
+[UpdateInGroup(typeof(VariableRateSimulationSystemGroup))]
+[UpdateAfter(typeof(BiologicalSystemGroup))]
 public partial class AISystemGroup : ComponentSystemGroup
 {
 }

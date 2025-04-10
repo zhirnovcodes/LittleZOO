@@ -9,8 +9,9 @@ public static class GrassFactory
     {
         // Calculate random attributes
         var widthVar = config.BlobReference.Value.Entities.Grass.Stats.Size;
-        var sizeMin = triangle.RadiusInner * widthVar.x;
-        var sizeMax = triangle.RadiusOuter * widthVar.y;
+        //var sizeMin = triangle.RadiusInner * widthVar.x;
+        //var sizeMax = triangle.RadiusOuter * widthVar.y;
+        var size = widthVar;//new float2(sizeMin, sizeMax);
 
         var minWholenessVar = config.BlobReference.Value.Entities.Grass.Stats.MinWholeness;
         var maxWholenessVar = config.BlobReference.Value.Entities.Grass.Stats.MaxWholeness;
@@ -45,8 +46,7 @@ public static class GrassFactory
             Prefab = prefab,
 
             // Growing parameters
-            MinSize = sizeMin,
-            MaxSize = sizeMax,
+            Size = size,
             MinWholeness = minWholeness,
             MaxWholeness = maxWholeness,
             GrowthSpeed = growthSpeed,
@@ -81,8 +81,7 @@ public static class GrassFactory
             Prefab = parentDNA.Prefab,
 
             // Growing parameters with variations
-            MinSize = GetRandomVariationWithDeviation(ref random, parentDNA.MinSize, deviation),
-            MaxSize = GetRandomVariationWithDeviation(ref random, parentDNA.MaxSize, deviation),
+            Size = GetRandomVariationWithDeviation(ref random, parentDNA.Size, deviation),
             MinWholeness = GetRandomVariationWithDeviation(ref random, parentDNA.MinWholeness, deviation),
             MaxWholeness = GetRandomVariationWithDeviation(ref random, parentDNA.MaxWholeness, deviation),
             GrowthSpeed = GetRandomVariationWithDeviation(ref random, parentDNA.GrowthSpeed, deviation),
@@ -109,16 +108,16 @@ public static class GrassFactory
     }
 
     // Updated to use GrassDNAComponent and regular ECB (not parallel)
-    public static void CreateRandomGrass(EntityCommandBuffer ecb, int triangleId, ref Random random, in IcosphereComponent icosphere, Entity prefab, in SimulationConfigComponent config)
+    public static void CreateRandomGrass(EntityCommandBuffer ecb, int triangleId, ref Random random, in IcosphereComponent icosphere, Entity prefab, in SimulationConfigComponent config, float age = 0)
     {
         var triangle = icosphere.GetTriangle(triangleId);
         
         var dna = CreateRandomGrassDNA(triangle, prefab, ref random, in config);
 
-        CreateGrass(ecb, in dna, in icosphere, triangleId, ref random);
+        CreateGrass(ecb, in dna, in icosphere, triangleId, ref random, age);
     }
 
-    public static void CreateGrass(EntityCommandBuffer ecb, in GrassDNAComponent dna, in IcosphereComponent icosphere, int triangleId, ref Random random)
+    public static void CreateGrass(EntityCommandBuffer ecb, in GrassDNAComponent dna, in IcosphereComponent icosphere, int triangleId, ref Random random, float age = 0)
     {
         // Create the grass entity
         Entity grassEntity = ecb.Instantiate(dna.Prefab);
@@ -148,32 +147,30 @@ public static class GrassFactory
         {
             Position = position,
             Rotation = rotation,
-            Scale = 0.1f // Initial small scale
+            Scale = 1f // Initial small scale
         });
 
         // Add aging component
         ecb.AddComponent(grassEntity, new AgingComponent
         {
-            AgeElapsed = 0f, // Start fresh
+            AgeElapsed = age, // Start fresh
             AgingFunctionSpan = dna.AgingFunctionSpan,
-            AgingFunctionHeight = dna.AgingFunctionHeight,
-            Wholeness = dna.MinWholeness // Start with low wholeness
+            AgingFunctionHeight = dna.AgingFunctionHeight
         });
 
         // Add growing component
         ecb.AddComponent(grassEntity, new GrowingComponent
         {
-            MinSize = dna.MinSize,
-            MaxSize = dna.MaxSize,
-            MaxWholeness = dna.MaxWholeness,
+            Size = dna.Size,
             GrowthSpeed = dna.GrowthSpeed
-        });
+        }) ;
 
         // Add edible component
         ecb.AddComponent(grassEntity, new EdibleComponent
         {
-            Nutrition = dna.AdvertisedFullness.x, // Will be calculated based on wholeness
-            MaxNutrition = dna.MaxNutrition
+            NutritionRange =new float2(0, dna.AdvertisedFullness.x), // Will be calculated based on wholeness
+            Nutrition = dna.MaxNutrition,
+            Wholeness = 100
         });
 
         // Add sleepable component

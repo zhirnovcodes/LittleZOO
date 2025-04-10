@@ -11,8 +11,7 @@ public struct GrassDNAComponent : IComponentData
     public Entity Prefab;
 
     // Growing parameters
-    public float MinSize;
-    public float MaxSize;
+    public float2 Size;
     public float MinWholeness;
     public float MaxWholeness;
     public float GrowthSpeed;
